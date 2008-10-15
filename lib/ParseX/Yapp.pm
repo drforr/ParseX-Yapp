@@ -33,6 +33,7 @@ alternation
 concatenation
   : terminal { [ $_[1] ] }
   | terminal codeblock { [ $_[1], $_[2] ] }
+  | terminal '%prec' rule_name codeblock { [ $_[1], $_[2], $_[3], $_[4] ] }
   | concatenation terminal { push @{$_[1]}, $_[2]; $_[1] }
   ;
 
@@ -57,11 +58,14 @@ sub Lexer
 
   $parser->YYData->{INPUT} or return ( '', undef );
   $parser->YYData->{INPUT} =~ s( ^ [ \t\n]+ )()x;
+  $parser->YYData->{INPUT} =~ s( ^ # .+ $ )()x;
+  $parser->YYData->{INPUT} =~ s( ^ $RE{comment}{C} )()x;
 
   for ($parser->YYData->{INPUT})
     {
     s( ^ ([-A-Za-z]+) )()x                   and return ( 'rule_name', $1 );
     s( ^ ($RE{quoted}) )()x                  and return ( 'literal', $1 );
+    s( ^ ([%]prec) )()x                      and return ( $1, $1 );
     s( ^ ($RE{balanced}{-parens=>'{}'}) )()x and return ( 'codeblock', $1 );
     s( ^ (.) )()x                            and return ( $1, $1 );
     }

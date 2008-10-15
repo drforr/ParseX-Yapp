@@ -1,4 +1,4 @@
-use Test::More tests => 10;
+use Test::More tests => 11;
 
 BEGIN
   {
@@ -17,7 +17,8 @@ sub parse
   {
   my ( $text ) = @_;
   $ParseX->YYData->{INPUT} = $text;
-  my $foo = $ParseX->YYParse( yylex => \&ParseX::Yapp::Lexer, yydebug => $DEBUG );
+  my $foo =
+    $ParseX->YYParse( yylex => \&ParseX::Yapp::Lexer, yydebug => $DEBUG );
   return $ParseX->YYData->{VARS};
   }
 
@@ -84,4 +85,17 @@ is_deeply
   q{A:b\n;\nB:c\n  | d},
   );
 
-use YAML;die Dump(parse( q{A:b { $_[1] }} . qq{\n;\n} . q{B:c { $_[2] }} . qq{\n} . q{  | d { $_[3] }} ))
+is_deeply
+  (
+  parse( <<'_EOF_'),
+A:b %prec NEG { $_[1] }
+;
+B:c { $_[2] }
+  | d { $_[3] }
+_EOF_
+  {
+  A => [ [ 'b', '%prec', 'NEG', '{ $_[1] }' ] ],
+  B => [ [ 'c', '{ $_[2] }' ], [ 'd', '{ $_[3] }' ] ]
+  },
+  q{A:b\n;\nB:c\n  | d},
+  );
