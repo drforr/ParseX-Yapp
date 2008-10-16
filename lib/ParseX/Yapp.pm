@@ -13,6 +13,35 @@ our $header = <<'_EOF_';
 %%
 _EOF_
 
+our $final_grammar = <<'_EOF_';
+list : rule
+     | list rule { [ $_[1], $_[2] ] }
+     ;
+
+rule : rule_name ':' expr ';' { [ $_[1], $_[2], $_[3], $_[4] ] }
+     | rule_name ':' expr rest ';' { [ $_[1], $_[2], $_[3], $_[4], $_[5] ] }
+     ;
+
+rest : codeblock
+     | '%prec' rule_name codeblock { [ $_[1], $_[2], $_[3] ] }
+     ;
+
+expr : term
+     | expr '...' { [ $_[1], $_[2] ] }
+     | expr term { [ $_[1], $_[2] ] }
+     | expr '|' expr { [ $_[1], $_[2], $_[3] ] }
+     | '(' expr ')' { [ $_[1], $_[2], $_[3] ] }
+     | '[' expr ']' { [ $_[1], $_[2], $_[3] ] }
+     ;
+
+term : literal
+     | rule_name
+     ;
+
+%%
+
+_EOF_
+
 our $grammar = <<'_EOF_';
 
 syntax
@@ -63,6 +92,7 @@ sub Lexer
 
   for ($parser->YYData->{INPUT})
     {
+s( ^ ([.]{3}) )()x and return ( '...', $1 );
     s( ^ ([-A-Za-z]+) )()x                   and return ( 'rule_name', $1 );
     s( ^ ($RE{quoted}) )()x                  and return ( 'literal', $1 );
     s( ^ ([%]prec) )()x                      and return ( $1, $1 );

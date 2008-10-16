@@ -7,7 +7,8 @@ BEGIN
   }
 
 my $parser =
-  Parse::Yapp->new ( input => $ParseX::Yapp::header . $ParseX::Yapp::grammar );
+#  Parse::Yapp->new ( input => $ParseX::Yapp::header . $ParseX::Yapp::grammar );
+  Parse::Yapp->new ( input => $ParseX::Yapp::header . $ParseX::Yapp::final_grammar );
 eval $parser->Output( classname => 'ParseX' );
 my $ParseX = ParseX->new;
 
@@ -17,10 +18,17 @@ sub parse
   {
   my ( $text ) = @_;
   $ParseX->YYData->{INPUT} = $text;
-  my $foo =
-    $ParseX->YYParse( yylex => \&ParseX::Yapp::Lexer, yydebug => $DEBUG );
-  return $ParseX->YYData->{VARS};
+#  my $foo = $ParseX->YYParse( yylex => \&ParseX::Yapp::Lexer, yydebug => $DEBUG );
+  return $ParseX->YYParse( yylex => \&ParseX::Yapp::Lexer, yydebug => $DEBUG );
+#  return $ParseX->YYData->{VARS};
   }
+use YAML;
+
+#die Dump(parse(q{A:b;}));
+#die Dump(parse(q{A:b...;}));
+#die Dump(parse(q{A:b c d;}));
+#die Dump(parse(q{A:b c | [ d e ] ;}));
+die Dump(parse(q{A:b c... | [ ( a | b ) d e ]... ;}));
 
 is_deeply
   (
