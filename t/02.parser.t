@@ -1,4 +1,4 @@
-use Test::More tests => 11;
+use Test::More tests => 53;
 
 BEGIN
   {
@@ -6,104 +6,124 @@ BEGIN
   use_ok( 'ParseX::Yapp' );
   }
 
-my $parser =
-#  Parse::Yapp->new ( input => $ParseX::Yapp::header . $ParseX::Yapp::grammar );
-  Parse::Yapp->new ( input => $ParseX::Yapp::header . $ParseX::Yapp::final_grammar );
-eval $parser->Output( classname => 'ParseX' );
-my $ParseX = ParseX->new;
+my $error = undef;
 
-my $DEBUG;
+# {{{ stuff
+my $yapp = Parse::Yapp->new( input => $ParseX::Yapp::grammar );
+eval $yapp->Output( classname => 'ParseX' );
+my $parser = ParseX->new;
 
 sub parse
   {
   my ( $text ) = @_;
-  $ParseX->YYData->{INPUT} = $text;
-#  my $foo = $ParseX->YYParse( yylex => \&ParseX::Yapp::Lexer, yydebug => $DEBUG );
-  return $ParseX->YYParse( yylex => \&ParseX::Yapp::Lexer, yydebug => $DEBUG );
-#  return $ParseX->YYData->{VARS};
+  $error = undef;
+  $parser->YYData->{INPUT} = $text;
+  return $parser->YYParse
+    (
+    yylex => \&ParseX::Yapp::Lexer,
+    yyerror => sub { $error = 1 } 
+    );
   }
-use YAML;
 
-#die Dump(parse(q{A:b;}));
-#die Dump(parse(q{A:b...;}));
-#die Dump(parse(q{A:b c d;}));
-#die Dump(parse(q{A:b c | [ d e ] ;}));
-die Dump(parse(q{A:b c... | [ ( a | b ) d e ]... ;}));
+# }}}
 
-is_deeply
+# {{{ Tests
+my @tests =
   (
-  parse( q{A:b} ),
-  { A => [ [ 'b' ] ] },
-  q{A:b}
+  # Failing tests
+  q[A] => 0,
+  q[_A] => 0,
+  q[0] => 0,
+  q[A:] => 0,
+
+  # Null rule
+  q[A:;] => 1,
+  q[0A:;] => 0,
+  q[A+:;] => 0,
+  q[A-:;] => 1,
+  q[Ab:;] => 1,
+  q[Ab-:;] => 1,
+  q[Ab-c:;] => 1,
+  q[Ab_c:;] => 1,
+
+#  q[AB_c:{};] => 1, # Null rules can have codeblocks associated with them
+
+  # Basic literals
+  q[Ab_c:'a';] => 1,
+  q[Ab_c:'a;] => 0,
+  q[Ab_c:a';] => 0,
+  q[Ab_c:'a'?;] => 1,
+  q[Ab_c:'a'*;] => 1,
+  q[Ab_c:'a'+;] => 1,
+  q[Ab_c:a;] => 1,
+  q[Ab_c:a?;] => 1,
+  q[Ab_c:a*;] => 1,
+  q[Ab_c:a+;] => 1,
+
+  # Empty parens, some random nestings.
+  q[A:();] => 1,
+  q[A:()();] => 1,
+  q[A:(());] => 1,
+  q[A:()(());] => 1,
+
+  # Empty parens with terms outside
+  q[A:() a;] => 1,
+  q[A:()() a;] => 1,
+  q[A:(()) a;] => 1,
+  q[A:()(()) a;] => 1,
+
+  q[A:a();] => 1,
+  q[A:a()();] => 1,
+  q[A:a(());] => 1,
+  q[A:a()(());] => 1,
+
+  q[A:a()+;] => 1,
+  q[A:a()?()*;] => 1,
+  q[A:a(()+)*;] => 1,
+  q[A:a()(()?)?;] => 1,
+
+  # Invalid nested parens
+  q[A:(;] => 0,
+  q[A:);] => 0,
+  q[A:());] => 0,
+  q[A:(();] => 0,
+
+  # Single-element parens, randomly nested
+  q[A:('a');] => 1,
+  q[A:('a')('a');] => 1,
+  q[A:(('a'));] => 1,
+  q[A:('a'('a'));] => 1,
+  q[A:('a'('a')'b');] => 1,
+  q[A:()(());] => 1,
+
+  q[A: a (b) c d (e f (g h i)) ghi ;] => 1,
+
+  # Alternations
+  q[A: a (b) | c d | (e | f (g h | i)) ghi ;] => 1,
+
+  # Mass codeblock test
+  q[A: a {} (b? {}) | c* {} {} d | (e | f (g h | i)) ghi ;] => 1,
+
+  # Mass codeblock test with precedence
+  q[A: a {} (b? {}) %prec blah | c* {} {} d %prec blah | (e | f (g h | i)) ghi %prec blah ;] => 1,
   );
 
-is_deeply
-  (
-  parse( q{A :b} ),
-  { A => [ [ 'b' ] ] },
-  q{A :b}
-  );
+# }}}
 
-is_deeply
-  (
-  parse( q{A : b} ),
-  { A => [ [ 'b' ] ] },
-  q{A : b}
-  );
-
-is_deeply
-  (
-  parse( q{A\n:b} ),
-  { A => [ [ 'b' ] ] },
-  q{A\n:b}
-  );
-
-is_deeply
-  (
-  parse( q{A\n\n:b} ),
-  { A => [ [ 'b' ] ] },
-  q{A\n\n:b}
-  );
-
-is_deeply
-  (
-  parse( q{A:b c} ),
-  { A => [ [ 'b', 'c' ] ] },
-  q{A:b c}
-  );
-
-is_deeply
-  (
-  parse( q{A:b c|d} ),
-  { A => [ [ 'b', 'c' ], [ 'd' ] ] },
-  q{A:b c|d}
-  );
-
-is_deeply
-  (
-  parse( qq{A:b;B:c} ),
-  { A => [ [ 'b' ] ], B => [ [ 'c' ] ] },
-  q{A:b;B:c}
-  );
-
-is_deeply
-  (
-  parse( qq{A:b\n;\nB:c\n  | d} ),
-  { A => [ [ 'b' ] ], B => [ [ 'c' ], [ 'd' ] ] },
-  q{A:b\n;\nB:c\n  | d},
-  );
-
-is_deeply
-  (
-  parse( <<'_EOF_'),
-A:b %prec NEG { $_[1] }
-;
-B:c { $_[2] }
-  | d { $_[3] }
-_EOF_
+# {{{ Test loop
+for ( my $i = 0; $i < @tests; $i+=2 )
   {
-  A => [ [ 'b', '%prec', 'NEG', '{ $_[1] }' ] ],
-  B => [ [ 'c', '{ $_[2] }' ], [ 'd', '{ $_[3] }' ] ]
-  },
-  q{A:b\n;\nB:c\n  | d},
-  );
+  my ( $name, $yn ) = @tests[$i,$i+1];
+  if ( $yn == 1 )
+    {
+    my $tree = parse($name);
+    ok( defined($tree), qq{valid q{$name}} );
+    }
+  else
+    {
+    eval { parse($name) };
+    ok( defined($error), qq{invalid q{$name}} );
+    }
+  }
+
+# }}}

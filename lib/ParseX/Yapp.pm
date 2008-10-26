@@ -13,67 +13,74 @@ our $header = <<'_EOF_';
 %%
 _EOF_
 
-our $final_grammar = <<'_EOF_';
-list : rule
-     | list rule { [ $_[1], $_[2] ] }
-     ;
-
-rule : rule_name ':' expr ';' { [ $_[1], $_[2], $_[3], $_[4] ] }
-     | rule_name ':' expr rest ';' { [ $_[1], $_[2], $_[3], $_[4], $_[5] ] }
-     ;
-
-rest : codeblock
-     | '%prec' rule_name codeblock { [ $_[1], $_[2], $_[3] ] }
-     ;
-
-expr : term
-     | expr '...' { [ $_[1], $_[2] ] }
-     | expr term { [ $_[1], $_[2] ] }
-     | expr '|' expr { [ $_[1], $_[2], $_[3] ] }
-     | '(' expr ')' { [ $_[1], $_[2], $_[3] ] }
-     | '[' expr ']' { [ $_[1], $_[2], $_[3] ] }
-     ;
-
-term : literal
-     | rule_name
-     ;
-
-%%
-
-_EOF_
+# {{{ Grammar
 
 our $grammar = <<'_EOF_';
 
-syntax
+%%
+
+#
+# I rather like the pyramid arrangement here...
+# Not that it matters one whit to the grammar.
+#
+
+rules
   : rule
-  | rule ';' syntax
+  | rules rule
   ;
 
 rule
-  : rule_name ':' alternation
-  { $_[0]->YYData->{VARS}{$_[1]} = $_[3] }
+  : rule_name ':' expr ';'
   ;
 
-alternation
-  : concatenation { [ $_[1] ] }
-  | alternation '|' concatenation { push @{$_[1]}, $_[3]; $_[1] }
+expr
+  : # empty
+  | factor opt_prec
+  | expr '|' factor opt_prec
   ;
 
-concatenation
-  : terminal { [ $_[1] ] }
-  | terminal codeblock { [ $_[1], $_[2] ] }
-  | terminal '%prec' rule_name codeblock { [ $_[1], $_[2], $_[3], $_[4] ] }
-  | concatenation terminal { push @{$_[1]}, $_[2]; $_[1] }
+opt_prec
+  : # empty
+  | '%prec' rule_name
+  ;
+
+factor
+  : Term
+  | factor Term
+  ;
+
+Term
+  : terminal opt_modifier Codeblock
+  | '(' expr ')' opt_modifier
+  ;
+
+opt_modifier
+  : # empty
+  | '+'
+  | '*'
+  | '?'
   ;
 
 terminal
-  : rule_name
-  | literal
+  : literal
+  | rule_name
+  ;
+
+Prec
+  : '%prec' rule_name
+  ;
+
+Codeblock
+  : # Empty
+  | codeblock
+  | Codeblock codeblock
   ;
 
 %%
 
 _EOF_
+
+# }}}
 
 =head2 Lexer
 
@@ -82,80 +89,20 @@ _EOF_
 sub Lexer
   {
   my ( $parser ) = @_;
-
-  exists $parser->YYData->{LINE} or $parser->YYData->{LINE} = 1;
-
+  
   $parser->YYData->{INPUT} or return ( '', undef );
   $parser->YYData->{INPUT} =~ s( ^ [ \t\n]+ )()x;
   $parser->YYData->{INPUT} =~ s( ^ # .+ $ )()x;
   $parser->YYData->{INPUT} =~ s( ^ $RE{comment}{C} )()x;
-
+  
   for ($parser->YYData->{INPUT})
     {
-s( ^ ([.]{3}) )()x and return ( '...', $1 );
-    s( ^ ([-A-Za-z]+) )()x                   and return ( 'rule_name', $1 );
+    s( ^ ([_A-Za-z][-_A-Za-z0-9]*) )()x      and return ( 'rule_name', $1 );
     s( ^ ($RE{quoted}) )()x                  and return ( 'literal', $1 );
     s( ^ ([%]prec) )()x                      and return ( $1, $1 );
     s( ^ ($RE{balanced}{-parens=>'{}'}) )()x and return ( 'codeblock', $1 );
     s( ^ (.) )()x                            and return ( $1, $1 );
     }
-  }
-
-=head2 _terminal($value)
-
-=cut
-
-sub _terminal
-  {
-  my ( $value ) = @_;
-
-  return $value if $value =~ m{ ^ ['"] }mx;
-  $value =~ s{ [- ] }{_}mxg;
-  return $value;
-  }
-
-=head2 _concatenation($contents)
-
-=cut
-
-sub _concatenation
-  {
-  my ( $contents ) = @_;
-  my $text;
-  
-  return join ' ', map { _terminal($_) } @$contents;
-  }
-
-=head2 _alternation($contents)
-
-=cut
-
-sub _alternation
-  {
-  my ( $contents ) = @_;
-  
-  return join ' | ', map { _concatenation($_) } @$contents;
-  }
-
-=head2 Warp
-
-=cut
-
-sub Warp
-  {
-  my ( $in_grammar ) = @_;
-
-  my $parser = Parse::Yapp->new ( input => $header . $grammar );
-  eval $parser->Output( classname => 'ParseX' );
-  my $ParseX = ParseX->new;
-
-  $ParseX->YYData->{INPUT} = $in_grammar;
-  my $foo = $ParseX->YYParse( yylex => \&Lexer, yydebug => 0 );
-  my $rules = $ParseX->YYData->{VARS};
-
-  return
-    join "\n\n",
-      map { "$_ : " . _alternation($rules->{$_}) . " ; " } sort keys %$rules;
   }
 
 1; # Magic true value required at end of module
