@@ -1,4 +1,4 @@
-use Test::More tests => 15;
+use Test::More tests => 16;
 
 BEGIN
 {
@@ -61,30 +61,37 @@ is_deeply ( parse( q{;} ), [ [ ';', ';' ] ], q{:.1} );
 
 is_deeply
   (
+  parse( q{''} ),
+  [ [ 'literal', q{''} ] ],
+  q{literal.1}
+  );
+
+is_deeply
+  (
   parse( q{'1, 2, foo'} ),
   [ [ 'literal', q{'1, 2, foo'} ] ],
-  q{literal.1}
+  q{literal.2}
   );
 
 is_deeply
   (
   parse( q{"1, 2, foo"} ),
   [ [ 'literal', q{"1, 2, foo"} ] ],
-  q{literal.2}
+  q{literal.3}
   );
 
 is_deeply
   (
   parse( q{'1, 2, \'foo\''} ),
   [ [ 'literal', q{'1, 2, \'foo\''} ] ],
-  q{literal.3}
+  q{literal.4}
   );
 
 is_deeply
   (
   parse( q{"1, 2, 'foo'"} ),
   [ [ 'literal', q{"1, 2, 'foo'"} ] ],
-  q{literal.4}
+  q{literal.5}
   );
 
 is_deeply
