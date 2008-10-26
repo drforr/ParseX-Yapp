@@ -1,4 +1,4 @@
-use Test::More tests => 14;
+use Test::More tests => 15;
 
 BEGIN
 {
@@ -13,10 +13,11 @@ input : # empty
   ;
 
 syntax :
-    rule_name { [ 'rule_name', $_[1] ] }
-  | literal { [ 'literal', $_[1] ] }
-  | ':' { [ $_[1], $_[1] ] }
-  | ';' { [ ';', $_[1] ] }
+    template_identifier {[ 'template_identifier', $_[1] ]}
+  | identifier {[ 'identifier', $_[1] ]}
+  | literal {[ 'literal', $_[1] ]}
+  | ':' {[ $_[1], $_[1] ]}
+  | ';' {[ ';', $_[1] ]}
   ;
 
 %%
@@ -42,9 +43,16 @@ sub parse
 
 is_deeply
   (
+  parse( q{<foo-bar>} ),
+  [ [ 'template_identifier', '<foo-bar>' ] ],
+  q{template_identifier.1}
+  ); 
+
+is_deeply
+  (
   parse( q{foo-bar} ),
-  [ [ 'rule_name', 'foo-bar' ] ],
-  q{rule_name.1}
+  [ [ 'identifier', 'foo-bar' ] ],
+  q{identifier.1}
   );
 
 is_deeply ( parse( q{:} ), [ [ ':', ':' ] ], q{:.1} );
@@ -134,11 +142,11 @@ is_deeply
   (
   parse( qq{"1, 2, 'foo'" : bar-foo;'hi there'} ),
     [
-    [ q{literal},   q{"1, 2, 'foo'"} ],
-    [ q{:},         q{:}             ],
-    [ q{rule_name}, q{bar-foo}       ],
-    [ q{;},         q{;}             ],
-    [ q{literal},   q{'hi there'}    ],
+    [ q{literal},    q{"1, 2, 'foo'"} ],
+    [ q{:},          q{:}             ],
+    [ q{identifier}, q{bar-foo}       ],
+    [ q{;},          q{;}             ],
+    [ q{literal},    q{'hi there'}    ],
     ],
   q{compound.2}
   );

@@ -1,4 +1,4 @@
-use Test::More tests => 62;
+use Test::More tests => 1;
 
 BEGIN
   {
@@ -30,16 +30,8 @@ sub parse
 # {{{ Tests
 my @tests =
   (
-  # Failing tests
-  q[A] => 0,
-  q[_A] => 0,
-  q[0] => 0,
-  q[A:] => 0,
-
   # Null rule
   q[A:;] => 1,
-  q[0A:;] => 0,
-  q[A+:;] => 0,
   q[A-:;] => 1,
   q[Ab:;] => 1,
   q[Ab-:;] => 1,
@@ -47,7 +39,6 @@ my @tests =
   q[Ab_c:;] => 1,
 
   q[AB_c:{};] => 1, # Null rules can have codeblocks associated with them
-  q[AB_c:%prec NULL;] => 1, # Null rules can have precedences... weird, huh?
 
   # Basic literals
   q[Ab_c:'a';] => 1,
@@ -127,20 +118,21 @@ _EOS_
 
 # }}}
 
-# {{{ Test loop
-for ( my $i = 0; $i < @tests; $i+=2 )
+sub run_test
   {
-  my ( $name, $yn ) = @tests[$i,$i+1];
-  if ( $yn == 1 )
-    {
-    my $tree = parse($name);
-    ok( defined($tree), qq{valid q{$name}} );
-    }
-  else
-    {
-    eval { parse($name) };
-    ok( defined($error), qq{invalid q{$name}} );
-    }
+  my ( $str, $layout, $debug ) = @_;
+  my $final = parse($str);
+$debug == 1 and defined($final) and do { use YAML; warn qq{q{$str}: }.Dump($final) };
+  ok( defined($final), qq{valid parse of q{$str}} );
+  is_deeply( $layout, $final, qq{conforming parse of q{$str}} );
   }
 
-# }}}
+#run_test(<<'_EOS_'
+#A: a {} (b? {}) %prec blah
+# | c* {} {} d %prec blah
+# | (e | f (g h | i)) ghi %prec blah
+# ;
+#
+#_Bling : a;
+#_EOS_
+#, [], 1 );

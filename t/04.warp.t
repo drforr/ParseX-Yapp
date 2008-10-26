@@ -21,8 +21,8 @@ sub Lexer
     }
   }
 
-die ParseX::Yapp::Warp(<<'_EOF_');
-A : b 'c' { $_[1] } ;
-C : 'd' e { $_[1] }
-  | f { $_[2] }
-_EOF_
+#die ParseX::Yapp::Warp(<<'_EOF_');
+#A : b 'c' { $_[1] } ;
+#C : 'd' e { $_[1] }
+#  | f { $_[2] }
+#_EOF_

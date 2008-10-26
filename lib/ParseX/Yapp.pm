@@ -30,18 +30,18 @@ rules
   ;
 
 rule
-  : rule_name ':' expr ';'
+  : identifier ':' expr ';'
   ;
 
 expr
-  : # empty
+  : opt_prec
   | factor opt_prec
   | expr '|' factor opt_prec
   ;
 
 opt_prec
-  : # empty
-  | '%prec' rule_name
+  : Codeblock
+  | '%prec' identifier Codeblock
   ;
 
 factor
@@ -55,7 +55,7 @@ Term
   ;
 
 opt_modifier
-  : # empty
+  :
   | '+'
   | '*'
   | '?'
@@ -63,15 +63,15 @@ opt_modifier
 
 terminal
   : literal
-  | rule_name
+  | identifier
   ;
 
 Prec
-  : '%prec' rule_name
+  : '%prec' identifier
   ;
 
 Codeblock
-  : # Empty
+  :
   | codeblock
   | Codeblock codeblock
   ;
@@ -92,12 +92,14 @@ sub Lexer
   
   $parser->YYData->{INPUT} or return ( '', undef );
   $parser->YYData->{INPUT} =~ s( ^ [ \t\n]+ )()x;
-  $parser->YYData->{INPUT} =~ s( ^ # .+ $ )()x;
+  $parser->YYData->{INPUT} =~ s( ^ [#] .* $ )()x;
   $parser->YYData->{INPUT} =~ s( ^ $RE{comment}{C} )()x;
   
   for ($parser->YYData->{INPUT})
     {
-    s( ^ ([_A-Za-z][-_A-Za-z0-9]*) )()x      and return ( 'rule_name', $1 );
+    s( ^ (<[_A-Za-z][-_A-Za-z0-9]*>) )()x and
+      return ( 'template_identifier', $1 );
+    s( ^ ([_A-Za-z][-_A-Za-z0-9]*) )()x      and return ( 'identifier', $1 );
     s( ^ ($RE{quoted}) )()x                  and return ( 'literal', $1 );
     s( ^ ([%]prec) )()x                      and return ( $1, $1 );
     s( ^ ($RE{balanced}{-parens=>'{}'}) )()x and return ( 'codeblock', $1 );
