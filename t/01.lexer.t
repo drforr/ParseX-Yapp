@@ -1,4 +1,4 @@
-use Test::More tests => 16;
+use Test::More tests => 15;
 
 BEGIN
 {
@@ -13,11 +13,10 @@ input : # empty
   ;
 
 syntax :
-    template_identifier {[ 'template_identifier', $_[1] ]}
-  | identifier {[ 'identifier', $_[1] ]}
-  | literal {[ 'literal', $_[1] ]}
-  | ':' {[ $_[1], $_[1] ]}
-  | ';' {[ ';', $_[1] ]}
+    identifier          {[ 'identifier',          $_[1] ]}
+  | string              {[ 'string',              $_[1] ]}
+  | ':'                 {[ $_[1],                 $_[1] ]}
+  | ';'                 {[ ';',                   $_[1] ]}
   ;
 
 %%
@@ -43,13 +42,6 @@ sub parse
 
 is_deeply
   (
-  parse( q{<foo-bar>} ),
-  [ [ 'template_identifier', '<foo-bar>' ] ],
-  q{template_identifier.1}
-  ); 
-
-is_deeply
-  (
   parse( q{foo-bar} ),
   [ [ 'identifier', 'foo-bar' ] ],
   q{identifier.1}
@@ -62,44 +54,44 @@ is_deeply ( parse( q{;} ), [ [ ';', ';' ] ], q{:.1} );
 is_deeply
   (
   parse( q{''} ),
-  [ [ 'literal', q{''} ] ],
-  q{literal.1}
+  [ [ 'string', q{''} ] ],
+  q{string.1}
   );
 
 is_deeply
   (
   parse( q{'1, 2, foo'} ),
-  [ [ 'literal', q{'1, 2, foo'} ] ],
-  q{literal.2}
+  [ [ 'string', q{'1, 2, foo'} ] ],
+  q{string.2}
   );
 
 is_deeply
   (
   parse( q{"1, 2, foo"} ),
-  [ [ 'literal', q{"1, 2, foo"} ] ],
-  q{literal.3}
+  [ [ 'string', q{"1, 2, foo"} ] ],
+  q{string.3}
   );
 
 is_deeply
   (
   parse( q{'1, 2, \'foo\''} ),
-  [ [ 'literal', q{'1, 2, \'foo\''} ] ],
-  q{literal.4}
+  [ [ 'string', q{'1, 2, \'foo\''} ] ],
+  q{string.4}
   );
 
 is_deeply
   (
   parse( q{"1, 2, 'foo'"} ),
-  [ [ 'literal', q{"1, 2, 'foo'"} ] ],
-  q{literal.5}
+  [ [ 'string', q{"1, 2, 'foo'"} ] ],
+  q{string.5}
   );
 
 is_deeply
   (
   parse( qq{'a' 'b'} ),
   [
-  [ q{literal}, q{'a'} ],
-  [ q{literal}, q{'b'} ],
+  [ q{string}, q{'a'} ],
+  [ q{string}, q{'b'} ],
   ],
   q{whitespace.1}
   );
@@ -108,8 +100,8 @@ is_deeply
   (
   parse( qq{'a'\t'b'} ),
   [
-  [ q{literal}, q{'a'} ],
-  [ q{literal}, q{'b'} ],
+  [ q{string}, q{'a'} ],
+  [ q{string}, q{'b'} ],
   ],
   q{whitespace.2}
   );
@@ -118,8 +110,8 @@ is_deeply
   (
   parse( qq{'a'\n\n'b'} ),
   [
-  [ q{literal}, q{'a'} ],
-  [ q{literal}, q{'b'} ],
+  [ q{string}, q{'a'} ],
+  [ q{string}, q{'b'} ],
   ],
   q{whitespace.3}
   );
@@ -128,8 +120,8 @@ is_deeply
   (
   parse( qq{'a'\t'b'} ),
   [
-  [ q{literal}, q{'a'} ],
-  [ q{literal}, q{'b'} ],
+  [ q{string}, q{'a'} ],
+  [ q{string}, q{'b'} ],
   ],
   q{whitespace.2}
   );
@@ -138,9 +130,9 @@ is_deeply
   (
   parse( qq{'a';'b'} ),
   [
-  [ q{literal}, q{'a'} ],
-  [ q{;},       q{;}   ],
-  [ q{literal}, q{'b'} ],
+  [ q{string}, q{'a'} ],
+  [ q{;},      q{;}   ],
+  [ q{string}, q{'b'} ],
   ],
   q{compound.1}
   );
@@ -149,11 +141,11 @@ is_deeply
   (
   parse( qq{"1, 2, 'foo'" : bar-foo;'hi there'} ),
     [
-    [ q{literal},    q{"1, 2, 'foo'"} ],
+    [ q{string},     q{"1, 2, 'foo'"} ],
     [ q{:},          q{:}             ],
     [ q{identifier}, q{bar-foo}       ],
     [ q{;},          q{;}             ],
-    [ q{literal},    q{'hi there'}    ],
+    [ q{string},     q{'hi there'}    ],
     ],
   q{compound.2}
   );

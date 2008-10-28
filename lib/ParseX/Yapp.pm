@@ -13,67 +13,142 @@ our $header = <<'_EOF_';
 %%
 _EOF_
 
-# {{{ Grammar
+#
+# %prec terms can't repeat in a row
+# {} can occur before or after %prec, though before it's got to have a term
+# technically. It's a 'fatal' which means it's lexed.
+#
+# Multiple {} in a row are illegal though.
+#
+# The grammar officially denies responsibility for:
+#
+# %prec NULL where NULL isn't identified.
+#   It could be in the lexer.
+#
+# Multiple lambda transitions
+#   The regenerator will either throw an error or ignore this.
+#
 
+# {{{ Grammar
 our $grammar = <<'_EOF_';
 
 %%
 
 #
-# I rather like the pyramid arrangement here...
-# Not that it matters one whit to the grammar.
+# Will eventually look like:
+# rules : rule+ ;
 #
-
 rules
-  : rule
+  :
+  | rule
   | rules rule
   ;
 
 rule
-  : identifier ':' expr ';'
+  : identifier opt_template_expansion_list ':' opt_alternation ';'
   ;
 
-expr
-  : opt_prec
-  | factor opt_prec
-  | expr '|' factor opt_prec
+#
+# opt_alternation could better be done as:
+# opt_alternation : ( alternation ( '|' alternation )* )?
+#
+# Eventually:
+# sep-list<sep,element> : ( element ( sep element )* )? ;
+# opt_alternation : sep-list<'|',alternation> ;
+#
+opt_alternation
+  :
+  | alternation
+  | opt_alternation '|' alternation
   ;
 
-opt_prec
-  : Codeblock
-  | '%prec' identifier Codeblock
+#
+# This can eventually be truncated to:
+# alternation : precedence? codeblock? ;
+# And remove 2 rules.
+#
+alternation
+  : opt_concatenation opt_precedence opt_codeblock
   ;
 
-factor
-  : Term
-  | factor Term
+opt_concatenation
+  :
+  | concatenation
   ;
 
-Term
-  : terminal opt_modifier Codeblock
-  | '(' expr ')' opt_modifier
+concatenation
+  : term
+  | concatenation term
+  ;
+
+term
+  : element opt_modifier
+  | '(' opt_subalternation ')' opt_modifier
   ;
 
 opt_modifier
   :
-  | '+'
   | '*'
+  | '+'
   | '?'
   ;
 
-terminal
-  : literal
+element
+  : string
+  | template_expansion_list
   | identifier
   ;
 
-Prec
-  : '%prec' identifier
+#
+# opt_alternation could better be done as:
+# opt_alternation : ( alternation ( '|' alternation )* )?
+#
+opt_subalternation
+  :
+  | subalternation
+  | opt_subalternation '|' subalternation
   ;
 
-Codeblock
+subalternation
+  : opt_concatenation
+  ;
+
+opt_precedence
+  :
+  | '%prec' identifier
+  ;
+
+opt_codeblock
   :
   | codeblock
-  | Codeblock codeblock
+  ;
+
+#
+# Eventually this could be:
+# csl<type> : <type> (',' <type>)* ;
+# opt_template_expansion_list : '<' csl<identifier> '>' ;
+#
+opt_template_expansion_list
+  :
+  | template_expansion_list
+  ;
+
+template_expansion_list
+  : '<' expansion_list '>'
+  ;
+
+#
+# Of course, this could be:
+# expansion_list : csl<identifier> ;
+#
+expansion_list
+  : expansion
+  | expansion_list ',' expansion
+  ;
+
+expansion
+  : identifier
+  | string
   ;
 
 %%
@@ -89,20 +164,24 @@ _EOF_
 sub Lexer
   {
   my ( $parser ) = @_;
-  
+
   $parser->YYData->{INPUT} or return ( '', undef );
-  $parser->YYData->{INPUT} =~ s( ^ [ \t\n]+ )()x;
-  $parser->YYData->{INPUT} =~ s( ^ [#] .* $ )()x;
-  $parser->YYData->{INPUT} =~ s( ^ $RE{comment}{C} )()x;
-  
-  for ($parser->YYData->{INPUT})
+
+  # Eat whitespace up.
+  FOO:
+  for ( $parser->YYData->{INPUT} )
     {
-    s( ^ (<[_A-Za-z][-_A-Za-z0-9]*>) )()x and
-      return ( 'template_identifier', $1 );
+    s( ^ [ \t\n]+ )()sx       and goto FOO;
+    s( ^ $RE{comment}{C} )()x and goto FOO;
+    s( ^ [#] .* ($|\n) )()mx  and goto FOO;
+    }
+
+  for ( $parser->YYData->{INPUT} )
+    {
     s( ^ ([_A-Za-z][-_A-Za-z0-9]*) )()x      and return ( 'identifier', $1 );
-    s( ^ ($RE{quoted}) )()x                  and return ( 'literal', $1 );
-    s( ^ ([%]prec) )()x                      and return ( $1, $1 );
+    s( ^ ($RE{quoted}) )()x                  and return ( 'string', $1 );
     s( ^ ($RE{balanced}{-parens=>'{}'}) )()x and return ( 'codeblock', $1 );
+    s( ^ ([%]prec) )()x                      and return ( $1, $1 );
     s( ^ (.) )()x                            and return ( $1, $1 );
     }
   }

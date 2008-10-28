@@ -1,4 +1,4 @@
-use Test::More tests => 62;
+use Test::More tests => 77;
 
 BEGIN
   {
@@ -30,99 +30,119 @@ sub parse
 # {{{ Tests
 my @tests =
   (
-  # Failing tests
-  q[A] => 0,
-  q[_A] => 0,
-  q[0] => 0,
-  q[A:] => 0,
+  # Basic identifier types, just in case.
+  q[a] => 0,
+  q[''] => 0,
+  q[<a>] => 0,
 
-  # Null rule
-  q[A:;] => 1,
-  q[0A:;] => 0,
-  q[A+:;] => 0,
-  q[A-:;] => 1,
-  q[Ab:;] => 1,
-  q[Ab-:;] => 1,
-  q[Ab-c:;] => 1,
-  q[Ab_c:;] => 1,
+  q[a:] => 0, # Rule and ':'
 
-  q[AB_c:{};] => 1, # Null rules can have codeblocks associated with them
-  q[AB_c:%prec NULL;] => 1, # Null rules can have precedences... weird, huh?
+  q[a:;] => 1, # Lambda
+  q[a:
+;] => 1, # Lambda
+  q[a<>:;] => 0, # Empty lambda macro
+  q[a<b>:;] => 1, # Lambda macro
+  q[a<b,c>:;] => 1, # Lambda macro with multiple parameters.
 
-  # Basic literals
-  q[Ab_c:'a';] => 1,
-  q[Ab_c:'a;] => 0,
-  q[Ab_c:a';] => 0,
-  q[Ab_c:'a'?;] => 1,
-  q[Ab_c:'a'*;] => 1,
-  q[Ab_c:'a'+;] => 1,
-  q[Ab_c:a;] => 1,
-  q[Ab_c:a?;] => 1,
-  q[Ab_c:a*;] => 1,
-  q[Ab_c:a+;] => 1,
+  # Comments
+  q[#
+a:;] => 1,
+  q[#
+# foo
+a:;] => 1,
+  q[a:#;] => 0,
+  q[a:;#] => 1,
+  q[a:;#:] => 1,
 
-  # Empty parens, some random nestings.
-  q[A:();] => 1,
-  q[A:()();] => 1,
-  q[A:(());] => 1,
-  q[A:()(());] => 1,
+  q[a:'#';] => 1,
+  q[a:'/**/';] => 1,
+  q[a:/*'*/';] => 0,
+  q[a:/*'*/'a';] => 1,
+  q[a:'/*';] => 1,
+  q[a:'*/';] => 1,
 
-  # Empty parens with terms outside
-  q[A:() a;] => 1,
-  q[A:()() a;] => 1,
-  q[A:(()) a;] => 1,
-  q[A:()(()) a;] => 1,
+  # Multiline comments
+  q[a /* : blah ; */] => 0,
+  q[a /* : blah */ ;] => 0,
+  q[a /* : */ blah ;] => 0,
 
-  q[A:a();] => 1,
-  q[A:a()();] => 1,
-  q[A:a(());] => 1,
-  q[A:a()(());] => 1,
+  q[a:'/*'*/;] => 0,
 
-  q[A:a()+;] => 1,
-  q[A:a()?()*;] => 1,
-  q[A:a(()+)*;] => 1,
-  q[A:a()(()?)?;] => 1,
+  q[a:{};] => 1,
+  q[a:{;] => 0,
+  q[a:};] => 0,
+  q[a:{{};] => 0,
+  q[a:}{};] => 0,
+  q[a:%prec NULL;] => 1,
+  q[a:%prec NULL{};] => 1,
+  q[a:{}%prec NULL;] => 0,
+  q[a:|%prec NULL|{}|%prec NULL{};] => 1, # All prec/codeblock variants
 
-  # Invalid nested parens
-  q[A:(;] => 0,
-  q[A:);] => 0,
-  q[A:());] => 0,
-  q[A:(();] => 0,
+  q[a:'a';] => 1,
+  q[a:'a'b;] => 1,
 
-  # Single-element parens, randomly nested
-  q[A:('a');] => 1,
-  q[A:('a')('a');] => 1,
-  q[A:(('a'));] => 1,
-  q[A:('a'('a'));] => 1,
-  q[A:('a'('a')'b');] => 1,
-  q[A:()(());] => 1,
+  # Parenthesis tests
+  q[a:(;] => 0,
+  q[a:);] => 0,
+  q[a:();] => 1,
+  q[a:(a);] => 1,
+  q[a:(b a);] => 1,
+  q[a:(b|a);] => 1,
 
-  q[A: a (b) c d (e f (g h i)) ghi ;] => 1,
+  # Make sure precedences are *only* at the end of a top-level alternation.
+  q[a:(b|a %prec NULL);] => 0,
+  q[a:(%prec NULLb|a %prec NULL);] => 0,
+  q[a:()();] => 1,
+  q[a:(());] => 1,
+  q[a:(a());] => 1,
+  q[a:(a(b)c)d;] => 1,
 
-  # Alternations
-  q[A: a (b) | c d | (e | f (g h | i)) ghi ;] => 1,
+  q[a:() %prec NULL;] => 1,
+  q[a:() | %prec NULL;] => 1,
+  q[a:() %prec NULL | %prec NULL;] => 1,
+  q[a:() | b %prec NULL;] => 1,
 
-  # Mass codeblock test
-  q[A: a {} (b? {}) | c* {} {} d | (e | f (g h | i)) ghi ;] => 1,
+  q[a:%prec NULL();] => 0,
 
-  # Mass codeblock test with precedence
-  q[A: a {} (b? {}) %prec blah | c* {} {} d %prec blah | (e | f (g h | i)) ghi %prec blah ;] => 1,
-  <<'_EOS_' => 1,
-A: a {} (b? {}) %prec blah
- | c* {} {} d %prec blah
- | (e | f (g h | i)) ghi %prec blah
- ;
+  # Modifiers
+  q[a:+;] => 0,
+  q[a:'a'+;] => 1,
+  q[a:+'a';] => 0, # No prefix modifiers
+  q[a:'a'+*;] => 0, # No repetition of modifiers
+  q[a: b 'a'+;] => 1,
+  q[a:()+;] => 1,
+  q[a:()()+;] => 1,
+  q[a:()*()+;] => 1,
 
-_Bling : a;
-_EOS_
+  q[a:<foo>;] => 1,
+  q[a:<'foo'>;] => 1,
+  q[a<b>:a;] => 1,
+  q[a<'b'>:a;] => 1,
+  q[a<b>:<a>;] => 1,
+  q[a<b>:<a>+;] => 1,
 
-  # Bletch, gotta check comments, I suppose.
-  q[A: foo #bar;] => 0, # Swallow semicolon
-  q[A: foo bar;#] => 1, # Trailing comments shouldn't matter
-  q[A: foo 'foo #bar';#] => 1, # Comments in strings
-  q[A: foo /*bar;*/] => 0, # Swallow semicolon
-  q[A: foo /*bar;*/;] => 1, # Comment with semicolon afterward
-  q[A: foo 'bar';/*bar;*/] => 1, # Swallow semicolon
+  q[csl<foo> : '(' <foo> ( ',' <foo> )* ')' ;] => 1,
+  q[decimal : DECIMAL a<precision,scale>? ;] => 1,
+  q[term:factor|term'*'factor|term'/'factor%precNEG;] => 1,
+  q[a<b>:<a>+;
+] => 1,
+  q[a<b>:
+<a>+;
+] => 1,
+  q[a<b>:
+<a>+
+;] => 1,
+  q[a<b>:
+<a>
++;] => 1,
+  q[COBOL-character-type:
+ ( CHARACTER SET IS? character-set-specification)?
+ (PIC|PICTURE) IS? ( 'X' ('(' length ')')?)+;
+] => 1,
+
+  q[foo #XXX blah
+:bar;] => 1,
+  q[foo : bar ;#XXX] => 1,
   );
 
 # }}}
