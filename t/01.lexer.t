@@ -6,17 +6,19 @@ use Parse::Yapp;
 use_ok( 'ParseX::Yapp' );
 }
 
-my $lexer_header = <<'_EOF_';
+my $lexer_grammar = <<'_EOF_';
+
+%%
 
 input : # empty
   | input syntax { push @{$_[1]}, $_[2]; $_[1] }
   ;
 
 syntax :
-    identifier          {[ 'identifier',          $_[1] ]}
-  | string              {[ 'string',              $_[1] ]}
-  | ':'                 {[ $_[1],                 $_[1] ]}
-  | ';'                 {[ ';',                   $_[1] ]}
+    identifier {[ 'identifier', $_[1] ]}
+  | string     {[ 'string',     $_[1] ]}
+  | ':'        {[ $_[1],        $_[1] ]}
+  | ';'        {[ ';',          $_[1] ]}
   ;
 
 %%
@@ -25,7 +27,7 @@ _EOF_
 
 my $parser = Parse::Yapp->new
   (
-  input => $ParseX::Yapp::header . $lexer_header
+  input => $lexer_grammar
   );
 my $yapptxt = $parser->Output( classname => 'ParseX' );
 eval $yapptxt;
