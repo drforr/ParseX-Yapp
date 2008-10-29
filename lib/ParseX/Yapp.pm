@@ -5,7 +5,6 @@ use strict;
 use Carp;
 use Regexp::Common;
 
-#use version;
 our $VERSION = q('0.0.3');
 
 #
@@ -35,16 +34,19 @@ our $grammar = <<'_EOF_';
 #
 rules
   :
-  {[ 'rules a' ]}
   | rule
-  {[ 'rules b', $_[1] ]}
+  {[ $_[1] ]}
   | rules rule
-  {[ 'rules c', $_[1], $_[2] ]}
+  { push @{$_[1]}, $_[2]; $_[1] }
   ;
 
 rule
   : identifier opt_template_expansion_list ':' opt_alternation ';'
-  {[ 'rule', $_[1], $_[2], $_[3], $_[4], $_[5] ]}
+  { my %h = ( name => $_[1] );
+    $h{expansion_list} = $_[2] if $_[2];
+    $h{alternation} = $_[4] if $_[4];
+    \%h
+  }
   ;
 
 #
@@ -58,9 +60,9 @@ rule
 opt_alternation
   :
   | alternation
-  {[ 'opt_alternation', $_[1] ]}
+  {[ $_[1] ]}
   | opt_alternation '|' alternation
-  {[ 'opt_alternation', $_[1], $_[2], $_[3] ]}
+  { push @{$_[1]}, $_[3]; $_[1] }
   ;
 
 #
@@ -70,80 +72,72 @@ opt_alternation
 #
 alternation
   : opt_concatenation opt_precedence opt_codeblock
-  {[ 'alternation', $_[1], $_[2], $_[3] ]}
+  { my %h = ( concatenation => $_[1] );
+    $h{precedence} = $_[2] if $_[2];
+    $h{codeblock} = $_[3] if $_[3];
+    \%h;
+  }
   ;
 
 opt_concatenation
   :
-  {[ 'opt_concatenation a' ]}
   | concatenation
-  {[ 'opt_concatenation', $_[1] ]}
   ;
 
 concatenation
   : term
-  {[ 'concatenation a', $_[1] ]}
+  {[ $_[1] ]}
   | concatenation term
-  {[ 'concatenation b', $_[1], $_[2] ]}
+  { push @{$_[1]}, $_[2]; $_[1] }
   ;
 
 term
   : element opt_modifier
-  {[ 'term a', $_[1], $_[2] ]}
-  | '(' opt_subalternation ')' opt_modifier
-  {[ 'term b', $_[1], $_[2], $_[3], $_[4] ]}
+  { my %h = ( name => $_[1] );
+    $h{modifier} = $_[2] if $_[2];
+    \%h
+  }
+  | '(' ')' opt_modifier # XXX There's gotta be a cleaner way for subalternation
+  { my %h = ( );
+    $h{modifier} = $_[4] if $_[4];
+    \%h
+  }
+  | '(' subalternation ')' opt_modifier
+  { my %h = ( children => $_[2] );
+    $h{modifier} = $_[4] if $_[4];
+    \%h
+  }
+  ;
+
+subalternation
+  : concatenation
+  {[ $_[1] ]}
+  | subalternation '|' concatenation
+  { push @{$_[1]}, $_[3]; $_[1] }
   ;
 
 opt_modifier
   :
-  {[ 'opt_modifier a' ]}
   | '*'
-  {[ 'opt_modifier b', $_[1] ]}
   | '+'
-  {[ 'opt_modifier c', $_[1] ]}
   | '?'
-  {[ 'opt_modifier d', $_[1] ]}
   ;
 
 element
   : string
-  {[ 'element a', $_[1] ]}
   | template_expansion_list
-  {[ 'element b', $_[1] ]}
   | identifier
-  {[ 'element c', $_[1] ]}
-  ;
-
-#
-# opt_alternation could better be done as:
-# opt_alternation : ( alternation ( '|' alternation )* )?
-#
-opt_subalternation
-  :
-  {[ 'opt_subalternation a' ]}
-  | subalternation
-  {[ 'opt_subalternation b', $_[1] ]}
-  | opt_subalternation '|' subalternation
-  {[ 'opt_subalternation c', $_[1], $_[2], $_[3] ]}
-  ;
-
-subalternation
-  : opt_concatenation
-  {[ 'subalternation', $_[1] ]}
   ;
 
 opt_precedence
   :
-  {[ 'opt_precedence a' ]}
   | '%prec' identifier
-  {[ 'opt_precedence b', $_[1], $_[2] ]}
+  { $_[2] }
   ;
 
 opt_codeblock
   :
-  {[ 'opt_codeblock a' ]}
   | codeblock
-  {[ 'opt_codeblock b', $_[1] ]}
   ;
 
 #
@@ -153,14 +147,13 @@ opt_codeblock
 #
 opt_template_expansion_list
   :
-  {[ 'opt_template_expansion_list a' ]}
   | template_expansion_list
-  {[ 'opt_template_expansion_list b', $_[1] ]}
+  {[ 'opt_template_expansion_list 2', $_[1] ]}
   ;
 
 template_expansion_list
   : '<' expansion_list '>'
-  {[ 'template_expansion_list', $_[1], $_[2], $_[3] ]}
+  { $_[2] }
   ;
 
 #
@@ -169,16 +162,14 @@ template_expansion_list
 #
 expansion_list
   : expansion
-  {[ 'expansion_list a', $_[1] ]}
+  {[ $_[1] ]}
   | expansion_list ',' expansion
-  {[ 'expansion_list b', $_[1], $_[2], $_[3] ]}
+  { push @{$_[1]}, $_[3]; $_[1] }
   ;
 
 expansion
   : identifier
-  {[ 'expansion a', $_[1] ]}
   | string
-  {[ 'expansion b', $_[1] ]}
   ;
 
 %%
@@ -198,7 +189,7 @@ sub Lexer
 
   $parser->YYData->{INPUT} or return ( '', undef );
 
-  # Eat whitespace up.
+  # Eat whitespace and comments before getting to the lexer.
   FOO:
   for ( $parser->YYData->{INPUT} )
     {
@@ -210,8 +201,8 @@ sub Lexer
   for ( $parser->YYData->{INPUT} )
     {
     s( ^ ([_A-Za-z][-_A-Za-z0-9]*) )()x      and return ( 'identifier', $1 );
-    s( ^ ($RE{quoted}) )()x                  and return ( 'string', $1 );
-    s( ^ ($RE{balanced}{-parens=>'{}'}) )()x and return ( 'codeblock', $1 );
+    s( ^ ($RE{quoted}) )()x                  and return ( 'string',     $1 );
+    s( ^ ($RE{balanced}{-parens=>'{}'}) )()x and return ( 'codeblock',  $1 );
     s( ^ ([%]prec) )()x                      and return ( $1, $1 );
     s( ^ (.) )()x                            and return ( $1, $1 );
     }
