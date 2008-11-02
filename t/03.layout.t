@@ -49,14 +49,91 @@ q{A:b|c; A:c|d} =>
 
 =cut
 
+#
+# This seems to be a pretty common thing to do:
+#
+# list : item { [ $_[1] ] }
+#      | list item  { push @{$_[1]}, $_[2] }
+#      ;
+# 
+# Why not encapsulate it?
+#
+
+sub _term
+  {
+  my ( $term ) = @_;
+  if ( $term->{modifier} )
+    {
+    return $term->{name} . $term->{modifier};
+    }
+  return $term->{name};
+  }
+
+sub _concatenation
+  {
+  my ( $concatenation ) = @_;
+  return join q{ }, map { _term($_) } @$concatenation;
+  }
+
+sub _alternation
+  {
+  my ( $alternation ) = @_;
+  return join q{ | }, map { _concatenation($_->{concatenation}) } @$alternation;
+  }
+
+sub rebuild
+  {
+  my ( $rules ) = @_;
+  my $text;
+
+  return join qq{\n}, map
+    {
+    "$_->{name} : "._alternation($_->{alternation}).";";
+    }
+  @$rules;
+
+#  for my $rule ( @$rules )
+#    {
+#    my $name = $rule->{name};
+#    my $alternation = _alternation($rule->{alternation});
+#    $text .= "$name : $alternation ;\n";
+#    }
+#  return $text;
+  }
+
+my $test = q{A:b;B:c 'd';C:c|d e+|f<g,h> i %prec FOO | (foo|bar)+;};
+
+warn rebuild(parse($test));
+
 die Dump
   (
-  parse
-    (
-    q{A:b;B:c d;C:c|d e+|f<g,h> i %prec FOO | (foo|bar)+;}
-    )
+  parse($test)
   );
 
 =pod
+
+---
+- alternation:
+    - concatenation:
+        - name: c
+    - concatenation:
+        - name: d
+        - modifier: +
+          name: e
+    - concatenation:
+        - name: f
+        - name:
+            - g
+            - h
+        - name: i
+      precedence: FOO
+    - concatenation:
+        - children:
+            - 
+              - name: foo
+            - 
+              - name: bar
+          modifier: +
+  name: C
 
 =cut
