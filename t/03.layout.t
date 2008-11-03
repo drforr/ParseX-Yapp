@@ -88,38 +88,29 @@ sub rebuild
 
   return join qq{\n}, map
     {
-    "$_->{name} : "._alternation($_->{alternation}).";";
+    if ( $_->{parameter_list} )
+      {
+      my $params = join ',', @{$_->{parameter_list}};
+      "$_->{name}<$params> : "._alternation($_->{alternation}).";";
+      }
+    else
+      {
+      "$_->{name} : "._alternation($_->{alternation}).";";
+      }
     }
   @$rules;
-
-#  for my $rule ( @$rules )
-#    {
-#    my $name = $rule->{name};
-#    my $alternation = _alternation($rule->{alternation});
-#    $text .= "$name : $alternation ;\n";
-#    }
-#  return $text;
   }
 
-my $test = q{A:b;B:c 'd';C:c|d e+|f<g,h> i %prec FOO | (foo|bar)+;};
+my $test = q{A:b;B:c 'd';C<length,precision>:length|precision '.' e+|f<g,h> i %prec FOO | (foo|bar)+;};
 
 warn rebuild(parse($test));
 
-die Dump
-  (
-  parse($test)
-  );
+die Dump ( parse($test) );
 
 =pod
 
 ---
 - alternation:
-    - concatenation:
-        - name: c
-    - concatenation:
-        - name: d
-        - modifier: +
-          name: e
     - concatenation:
         - name: f
         - name:

@@ -30,23 +30,30 @@ our $grammar = <<'_EOF_';
 
 #
 # Will eventually look like:
-# rules : rule+ ;
+# rules : rule* ;
 #
 rules
-  :
+  : LAMBDA
   | rule
-  {[ $_[1] ]}
+  { [ $_[1] ] }
   | rules rule
   { push @{$_[1]}, $_[2]; $_[1] }
   ;
 
 rule
-  : identifier opt_template_expansion_list ':' opt_alternation ';'
-  { my %h = ( name => $_[1] );
-    $h{expansion_list} = $_[2] if $_[2];
-    $h{alternation} = $_[4] if $_[4];
+  : rule_name ':' opt_alternation ';'
+  { my %h = ( name => $_[1]{name} );
+    $h{parameter_list} = $_[1]{parameter_list} if $_[1]{parameter_list};
+    $h{alternation} = $_[3] if $_[3];
     \%h
   }
+  ;
+
+rule_name
+  : identifier
+  { { name => $_[1] } }
+  | identifier template_expansion_list
+  { { name => $_[1], parameter_list => $_[2] } }
   ;
 
 #
@@ -58,9 +65,9 @@ rule
 # opt_alternation : sep-list<'|',alternation> ;
 #
 opt_alternation
-  :
+  : LAMBDA
   | alternation
-  {[ $_[1] ]}
+  { [ $_[1] ] }
   | opt_alternation '|' alternation
   { push @{$_[1]}, $_[3]; $_[1] }
   ;
@@ -80,13 +87,13 @@ alternation
   ;
 
 opt_concatenation
-  :
+  : LAMBDA
   | concatenation
   ;
 
 concatenation
   : term
-  {[ $_[1] ]}
+  { [ $_[1] ] }
   | concatenation term
   { push @{$_[1]}, $_[2]; $_[1] }
   ;
@@ -111,13 +118,13 @@ term
 
 subalternation
   : concatenation
-  {[ $_[1] ]}
+  { [ $_[1] ] }
   | subalternation '|' concatenation
   { push @{$_[1]}, $_[3]; $_[1] }
   ;
 
 opt_modifier
-  :
+  : LAMBDA
   | '*'
   | '+'
   | '?'
@@ -130,25 +137,14 @@ element
   ;
 
 opt_precedence
-  :
+  : LAMBDA
   | '%prec' identifier
   { $_[2] }
   ;
 
 opt_codeblock
-  :
+  : LAMBDA
   | codeblock
-  ;
-
-#
-# Eventually this could be:
-# csl<type> : <type> (',' <type>)* ;
-# opt_template_expansion_list : '<' csl<identifier> '>' ;
-#
-opt_template_expansion_list
-  :
-  | template_expansion_list
-  {[ 'opt_template_expansion_list 2', $_[1] ]}
   ;
 
 template_expansion_list
@@ -162,7 +158,7 @@ template_expansion_list
 #
 expansion_list
   : expansion
-  {[ $_[1] ]}
+  { [ $_[1] ] }
   | expansion_list ',' expansion
   { push @{$_[1]}, $_[3]; $_[1] }
   ;
@@ -170,6 +166,10 @@ expansion_list
 expansion
   : identifier
   | string
+  ;
+
+LAMBDA
+  :
   ;
 
 %%
