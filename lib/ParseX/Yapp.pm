@@ -44,7 +44,7 @@ rule
   : rule_name ':' opt_alternation ';'
   { my %h = ( name => $_[1]{name} );
     $h{parameter_list} = $_[1]{parameter_list} if $_[1]{parameter_list};
-    $h{alternation} = $_[3] if $_[3];
+    $h{alternation}    = $_[3] if $_[3];
     \%h
   }
   ;
@@ -81,20 +81,16 @@ alternation
   : opt_concatenation opt_precedence opt_codeblock
   { my %h = ( concatenation => $_[1] );
     $h{precedence} = $_[2] if $_[2];
-    $h{codeblock} = $_[3] if $_[3];
+    $h{codeblock}  = $_[3] if $_[3];
     \%h;
   }
   ;
 
 opt_concatenation
   : LAMBDA
-  | concatenation
-  ;
-
-concatenation
-  : term
+  | term
   { [ $_[1] ] }
-  | concatenation term
+  | opt_concatenation term
   { push @{$_[1]}, $_[2]; $_[1] }
   ;
 
@@ -104,23 +100,19 @@ term
     $h{modifier} = $_[2] if $_[2];
     \%h
   }
-  | '(' ')' opt_modifier # XXX There's gotta be a cleaner way for subalternation
-  { my %h = ( );
-    $h{modifier} = $_[4] if $_[4];
-    \%h
-  }
-  | '(' subalternation ')' opt_modifier
-  { my %h = ( children => $_[2] );
+  | '(' opt_subalternation ')' opt_modifier
+  { my %h = ( alternation => $_[2] );
     $h{modifier} = $_[4] if $_[4];
     \%h
   }
   ;
 
-subalternation
-  : concatenation
-  { [ $_[1] ] }
-  | subalternation '|' concatenation
-  { push @{$_[1]}, $_[3]; $_[1] }
+opt_subalternation
+  : LAMBDA
+  | opt_concatenation
+  { [ { concatenation => $_[1] } ] }
+  | opt_subalternation '|' opt_concatenation
+  { push @{$_[1]}, { concatenation => $_[3] }; $_[1] }
   ;
 
 opt_modifier
