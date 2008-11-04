@@ -1,4 +1,4 @@
-use Test::More tests => 11;
+use Test::More tests => 15;
 
 BEGIN
   {
@@ -73,6 +73,46 @@ run_test
       concatenation => [{ name => 'a', modifier => '+' }]
       }]
     }]
+  );
+
+run_test
+  (
+  q{A:(a+);},
+    [{
+    name => 'A',
+    alternation =>
+      [{
+      concatenation =>
+        [{
+        alternation =>
+          [{
+          concatenation =>
+            [{
+            name => 'a', modifier => '+'
+            }]
+          }]
+        }]
+      }]
+    }]
+  );
+
+run_test
+  (
+  q{A:(a)+;},
+    [{
+    name => 'A',
+    alternation =>
+      [{
+      concatenation =>
+        [{
+        modifier => '+', 
+        alternation =>
+          [{
+          concatenation => [{ name => 'a' }]
+          }]
+        }]
+      }]
+    }], 0
   );
 
 run_test
