@@ -1,8 +1,9 @@
-use Test::More tests => 5;
+use Test::More tests => 11;
 
 BEGIN
   {
   use Parse::Yapp;
+  use YAML;
   use_ok( 'ParseX::Yapp' );
   }
 
@@ -39,10 +40,37 @@ run_test
     name => 'A',
     alternation =>
       [{
+      concatenation => [{ name => 'a' }]
+      }]
+    }]
+  );
+
+run_test
+  (
+  q{A:(a);},
+    [{
+    name => 'A',
+    alternation =>
+      [{
       concatenation =>
         [{
-        name => 'a'
+        alternation =>
+          [{
+          concatenation => [{ name => 'a' }]
+          }]
         }]
+      }]
+    }]
+  );
+
+run_test
+  (
+  q{A:a+;},
+    [{
+    name => 'A',
+    alternation =>
+      [{
+      concatenation => [{ name => 'a', modifier => '+' }]
       }]
     }]
   );
@@ -61,6 +89,21 @@ run_test
         ]
       }]
     }]
+  );
+
+run_test
+  (
+  q{A:a|b;},
+    [
+      {
+      name => 'A',
+      alternation =>
+        [
+        { concatenation => [{ name => 'a' }] },
+        { concatenation => [{ name => 'b' }] }
+        ]
+      }
+    ], 0
   );
 
 #
@@ -132,31 +175,3 @@ sub rebuild
   }
 
 # }}}
-
-#my $test = q{A:b;B:c 'd';C<length,precision>:length|precision '.' e+|f<g,h> i %prec FOO | (a b c|d e f)+;};
-#my $test = q{A:b|c d|e f g;};
-#my $test = q{A:()|(b)+|(c d)*|(e f g)?|(h i|j k);};
-#my $test = q{A:z ()| z (b)+| z (c d)*| z (e f g)?| z (h i|j k (l m| n)+);};
-#my $test = q{A:b c;};
-
-#warn rebuild(parse($test));
-#
-#die Dump ( parse($test) );
-
-=pod
-
-A : b | c d | e f g ;  =>
----
-- alternation:
-    - concatenation:
-        - name: b
-    - concatenation:
-        - name: c
-        - name: d
-    - concatenation:
-        - name: e
-        - name: f
-        - name: g
-  name: A
-
-=cut
