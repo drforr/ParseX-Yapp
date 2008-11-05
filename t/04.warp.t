@@ -1,28 +1,72 @@
-use Test::More tests => 1;
+use Test::More tests => 2;
 
 BEGIN
   {
   use Parse::Yapp;
+  use YAML;
   use_ok( 'ParseX::Yapp' );
   }
 
-sub Lexer
+# {{{ stuff
+my $yapp = Parse::Yapp->new( input => $ParseX::Yapp::grammar );
+eval $yapp->Output( classname => 'ParseX' );
+my $parser = ParseX->new;
+
+sub parse
   {
-  my ( $parser ) = @_;
-
-  exists $parser->YYData->{LINE} or $parser->YYData->{LINE} = 1;
-
-  $parser->YYData->{INPUT} or return ( '', undef );
-  $parser->YYData->{INPUT} =~ s( ^ [ \t\n]+ )()x;
-
-  for ($parser->YYData->{INPUT})
-    {
-    s( ^ (.) )()x and return ( $1, $1 );
-    }
+  my ( $text ) = @_;
+  $parser->YYData->{INPUT} = $text;
+  return $parser->YYParse ( yylex => \&ParseX::Yapp::Lexer );
   }
 
-#die ParseX::Yapp::Warp(<<'_EOF_');
-#A : b 'c' { $_[1] } ;
-#C : 'd' e { $_[1] }
-#  | f { $_[2] }
-#_EOF_
+# }}}
+
+sub term
+  {
+  my ( $term ) = @_;
+  my $text;
+  $text = $term->{alternation} ?
+    q{(} . alternation($term->{alternation}) . q{)} :
+    $term->{name};
+
+  $text .= $term->{modifier} if $term->{modifier};
+  return $text;
+  }
+
+sub concatenation
+  {
+  my ( $concatenation ) = @_;
+  return join q{ }, map { term($_) } @$concatenation;
+  }
+
+sub alternation
+  {
+  my ( $alternation ) = @_;
+  return join qq{ | }, map { concatenation($_->{concatenation}) } @$alternation;
+  }
+
+sub rule
+  {
+  my ( $rule ) = @_;
+  my $alternation = alternation($rule->{alternation});
+  return "$rule->{name} : $alternation ;";
+  }
+
+sub rules
+  {
+  my ( $rules ) = @_;
+  return join qq{\n}, map { rule($_) } @$rules;
+  }
+
+#
+# This seems to be a pretty common thing to do:
+#
+# list : item { [ $_[1] ] }
+#      | list item  { push @{$_[1]}, $_[2] }
+#      ;
+# 
+# Why not encapsulate it?
+#
+
+my $str = q{A : ((a) b*)+ | b* ;};
+ok( $str eq rules(parse($str)), qq{q{$str}} );
