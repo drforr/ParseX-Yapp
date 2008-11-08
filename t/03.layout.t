@@ -1,4 +1,4 @@
-use Test::More tests => 17;
+use Test::More tests => 37;
 
 BEGIN
   {
@@ -168,6 +168,239 @@ run_test
 run_test
   (
   q{A:(a)+|b;},
+    [{
+    name => 'A',
+    alternation =>
+      [{
+      concatenation =>
+        [{
+        modifier => '+', 
+        alternation =>
+          [{
+          concatenation => [{ name => 'a' }]
+          }]
+        }]
+      },{ concatenation => [{ name => 'b' }] }]
+    }], 0
+  );
+
+# }}}
+
+# {{{ A:(a)+|b; #2
+run_test
+  (
+  q{A:(a)+|b
+;},
+    [{
+    name => 'A',
+    alternation =>
+      [{
+      concatenation =>
+        [{
+        modifier => '+', 
+        alternation =>
+          [{
+          concatenation => [{ name => 'a' }]
+          }]
+        }]
+      },{ concatenation => [{ name => 'b' }] }]
+    }], 0
+  );
+
+# }}}
+
+# {{{ A:(a)+|b; #3
+run_test
+  (
+  q{A:(a)+|
+b;},
+    [{
+    name => 'A',
+    alternation =>
+      [{
+      concatenation =>
+        [{
+        modifier => '+', 
+        alternation =>
+          [{
+          concatenation => [{ name => 'a' }]
+          }]
+        }]
+      },{ concatenation => [{ name => 'b' }] }]
+    }], 0
+  );
+
+# }}}
+
+# {{{ A:(a)+|b; #4
+run_test
+  (
+  q{A:(a)+
+|b;},
+    [{
+    name => 'A',
+    alternation =>
+      [{
+      concatenation =>
+        [{
+        modifier => '+', 
+        alternation =>
+          [{
+          concatenation => [{ name => 'a' }]
+          }]
+        }]
+      },{ concatenation => [{ name => 'b' }] }]
+    }], 0
+  );
+
+# }}}
+
+# {{{ A:(a)+|b; #5
+run_test
+  (
+  q{A:(a)
++|b;},
+    [{
+    name => 'A',
+    alternation =>
+      [{
+      concatenation =>
+        [{
+        modifier => '+', 
+        alternation =>
+          [{
+          concatenation => [{ name => 'a' }]
+          }]
+        }]
+      },{ concatenation => [{ name => 'b' }] }]
+    }], 0
+  );
+
+# }}}
+
+# {{{ A:(a)+|b; #6
+run_test
+  (
+  q{A:(a
+)+|b;},
+    [{
+    name => 'A',
+    alternation =>
+      [{
+      concatenation =>
+        [{
+        modifier => '+', 
+        alternation =>
+          [{
+          concatenation => [{ name => 'a' }]
+          }]
+        }]
+      },{ concatenation => [{ name => 'b' }] }]
+    }], 0
+  );
+
+# }}}
+
+# {{{ A:(a)+|b; #7
+run_test
+  (
+  q{A:(
+a)+|b;},
+    [{
+    name => 'A',
+    alternation =>
+      [{
+      concatenation =>
+        [{
+        modifier => '+', 
+        alternation =>
+          [{
+          concatenation => [{ name => 'a' }]
+          }]
+        }]
+      },{ concatenation => [{ name => 'b' }] }]
+    }], 0
+  );
+
+# }}}
+
+# {{{ A:(a)+|b; #8
+run_test
+  (
+  q{A:
+(a)+|b;},
+    [{
+    name => 'A',
+    alternation =>
+      [{
+      concatenation =>
+        [{
+        modifier => '+', 
+        alternation =>
+          [{
+          concatenation => [{ name => 'a' }]
+          }]
+        }]
+      },{ concatenation => [{ name => 'b' }] }]
+    }], 0
+  );
+
+# }}}
+
+# {{{ A:(a)+|b; #9
+run_test
+  (
+  q{A
+:(a)+|b;},
+    [{
+    name => 'A',
+    alternation =>
+      [{
+      concatenation =>
+        [{
+        modifier => '+', 
+        alternation =>
+          [{
+          concatenation => [{ name => 'a' }]
+          }]
+        }]
+      },{ concatenation => [{ name => 'b' }] }]
+    }], 0
+  );
+
+# }}}
+
+# {{{ A:(a)+|b; #10
+run_test
+  (
+  q{
+A:(a)+|b;},
+    [{
+    name => 'A',
+    alternation =>
+      [{
+      concatenation =>
+        [{
+        modifier => '+', 
+        alternation =>
+          [{
+          concatenation => [{ name => 'a' }]
+          }]
+        }]
+      },{ concatenation => [{ name => 'b' }] }]
+    }], 0
+  );
+
+# }}}
+
+# {{{ A:(a)+|b; #11
+run_test
+  (
+  q{
+A : ( a ) +
+  | b
+  ;
+},
     [{
     name => 'A',
     alternation =>

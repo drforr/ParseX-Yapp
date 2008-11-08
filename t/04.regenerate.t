@@ -1,4 +1,4 @@
-use Test::More tests => 2;
+use Test::More tests => 5;
 
 BEGIN
   {
@@ -83,5 +83,24 @@ sub rules
 # Why not encapsulate it?
 #
 
+{
 my $str = q{A : ((a) b*)+ | b* ;};
 ok( $str eq rules(parse($str)), qq{q{$str}} );
+
+ok( $str eq rules(parse(<<'_EOF_')), qq{q{$str}} );
+A : ( (a) b*)+
+  | b*
+  ;
+_EOF_
+}
+
+{
+my $str = q{A : ((foo) b*)+ | 'modifier'* ;};
+ok( $str eq rules(parse($str)), qq{q{$str}} );
+
+ok( $str eq rules(parse(<<'_EOF_')), qq{q{$str}} );
+A : ( (foo) b*)+
+  | 'modifier'*
+  ;
+_EOF_
+}
