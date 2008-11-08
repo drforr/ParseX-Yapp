@@ -172,6 +172,8 @@ _EOF_
 
 =head2 Lexer
 
+Non-eval'ed lexer.
+
 =cut
 
 # {{{ Lexer

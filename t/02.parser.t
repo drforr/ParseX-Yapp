@@ -1,4 +1,4 @@
-use Test::More tests => 77;
+use Test::More tests => 86;
 
 BEGIN
   {
@@ -55,6 +55,7 @@ a:;] => 1,
   q[a:;#:] => 1,
 
   q[a:'#';] => 1,
+  q[a:'modifier';] => 1,
   q[a:'/**/';] => 1,
   q[a:/*'*/';] => 0,
   q[a:/*'*/'a';] => 1,
@@ -107,6 +108,7 @@ a:;] => 1,
   # Modifiers
   q[a:+;] => 0,
   q[a:'a'+;] => 1,
+  q[A:'modifier'+;] => 1,
   q[a:+'a';] => 0, # No prefix modifiers
   q[a:'a'+*;] => 0, # No repetition of modifiers
   q[a: b 'a'+;] => 1,
@@ -143,6 +145,32 @@ a:;] => 1,
   q[foo #XXX blah
 :bar;] => 1,
   q[foo : bar ;#XXX] => 1,
+  q[foo : 'modifier' ;
+] => 1,
+  q[
+foo : 'modifier' ;
+] => 1,
+  q[
+foo : 'modifier'
+ ;
+] => 1,
+  q[
+foo :
+ 'modifier' ;
+] => 1,
+  q[
+foo
+ : 'modifier' ;
+] => 1,
+  q[
+foo
+ : 'modifier'
+ ;
+] => 1,
+  q[ foo
+ : 'modifier'
+ ;
+] => 1,
   );
 
 # }}}

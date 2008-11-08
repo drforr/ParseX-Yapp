@@ -1,4 +1,4 @@
-use Test::More tests => 17;
+use Test::More tests => 1;
 
 BEGIN
   {
@@ -34,6 +34,102 @@ sub run_test
   }
 
 # }}}
+
+# {{{ term($term)
+sub term
+  {
+  my ( $term ) = @_;
+  my $text;
+  $text = $term->{alternation} ?
+    q{(} . alternation($term->{alternation}) . q{)} :
+    $term->{name};
+
+  $text .= $term->{modifier} if $term->{modifier};
+  return $text;
+  }
+
+# }}}
+
+# {{{ concatenation($concatenation)
+sub concatenation
+  {
+  my ( $concatenation ) = @_;
+  return join q{ }, map { term($_) } @$concatenation;
+  }
+
+# }}}
+
+# {{{ alternation($alternation)
+sub alternation
+  {
+  my ( $alternation ) = @_;
+  return join qq{ | }, map { concatenation($_->{concatenation}) } @$alternation;
+  }
+
+# }}}
+
+# {{{ rule($rule)
+sub rule
+  {
+  my ( $rule ) = @_;
+  my $alternation = alternation($rule->{alternation});
+  return "$rule->{name} : $alternation ;";
+  }
+
+# }}}
+
+# {{{ rules($rules)
+sub rules
+  {
+  my ( $rules ) = @_;
+  return join qq{\n}, map { rule($_) } @$rules;
+  }
+
+# }}}
+
+=pod
+
+A : 'modifier'?
+  ;
+
+=>
+
+A : _gensym_0x12345 ;
+_gensym_0x12345
+  : LAMBDA
+  | 'modifier'
+  ;
+
+------
+
+A : 'modifier'*
+  ;
+
+A : _gensym_0x12345
+  ;
+_gensym_0x12345
+  : LAMBDA
+  | 'modifier'
+  | _gensym_0x12345 'modifier'
+  ; 
+
+------
+
+A : 'modifier'+
+  ;
+
+=>
+
+A : _gensym_0x12345
+  ;
+_gensym_0x12345
+  : 'modifier'
+  | _gensym_0x12345 'modifier'
+  ;
+
+=cut
+
+=pod
 
 # {{{ A:a;
 run_test
@@ -185,3 +281,5 @@ run_test
   );
 
 # }}}
+
+=cut

@@ -21,6 +21,7 @@ sub parse
 
 # }}}
 
+# {{{ term($term)
 sub term
   {
   my ( $term ) = @_;
@@ -33,18 +34,27 @@ sub term
   return $text;
   }
 
+# }}}
+
+# {{{ concatenation($concatenation)
 sub concatenation
   {
   my ( $concatenation ) = @_;
   return join q{ }, map { term($_) } @$concatenation;
   }
 
+# }}}
+
+# {{{ alternation($alternation)
 sub alternation
   {
   my ( $alternation ) = @_;
   return join qq{ | }, map { concatenation($_->{concatenation}) } @$alternation;
   }
 
+# }}}
+
+# {{{ rule($rule)
 sub rule
   {
   my ( $rule ) = @_;
@@ -52,11 +62,16 @@ sub rule
   return "$rule->{name} : $alternation ;";
   }
 
+# }}}
+
+# {{{ rules($rules)
 sub rules
   {
   my ( $rules ) = @_;
   return join qq{\n}, map { rule($_) } @$rules;
   }
+
+# }}}
 
 #
 # This seems to be a pretty common thing to do:
