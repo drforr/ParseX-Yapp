@@ -40,10 +40,42 @@ sub run_test
 
 # }}}
 
+# {{{ _simplify_rule($rule)
+sub _simplify_rule
+  {
+  my ( $rule ) = @_;
+  my @new_rules;
+
+  for my $alternative ( @{$rule->{alternative}} )
+    {
+    for my $concatenation ( @{$alternative->{concatenation}} )
+      {
+      next unless $concatenation->{modifier};
+die "Found modifier on rule '$rule->{name}'\n";
+      }
+    }
+
+  return @new_rules;
+  }
+
+# }}}
+
 # {{{ simplify($rules)
 sub simplify
   {
   my ( $rules ) = @_;
+  my @new_rules;
+
+  for my $rule ( @$rules )
+    {
+    push @new_rules, _simplify_rule($rule);
+    }
+  if ( @new_rules )
+    {
+    push @$rules, @new_rules;
+    push @$rules, { name => 'LAMBDA' }
+    }
+
   return $rules;
   }
 
@@ -55,14 +87,14 @@ run_test
   q{A:'foo'?;},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [
       { concatenation => [{ name => '_A_alt_1_term_1' }] }
       ]
     },
     {
     name => '_A_alt_1_term_1',
-    alternation =>
+    alternative =>
       [
       { concatenation => [{ name => 'LAMBDA' }] },
       { concatenation => [{ name => q{'foo'} }] },
@@ -70,10 +102,6 @@ run_test
     },
     {
     name => 'LAMBDA',
-    alternation =>
-      [
-      { concatenation => [] },
-      ]
     }], 0
   );
 

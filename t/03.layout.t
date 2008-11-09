@@ -55,7 +55,7 @@ run_test
   q{A:a;},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [{
       concatenation => [{ name => 'a' }]
       }]
@@ -70,11 +70,11 @@ run_test
   q{A:(a);},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [{
       concatenation =>
         [{
-        alternation =>
+        alternative =>
           [{
           concatenation => [{ name => 'a' }]
           }]
@@ -91,7 +91,7 @@ run_test
   q{A:a+;},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [{
       concatenation => [{ name => 'a', modifier => '+' }]
       }]
@@ -106,11 +106,11 @@ run_test
   q{A:(a+);},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [{
       concatenation =>
         [{
-        alternation =>
+        alternative =>
           [{
           concatenation => [{ name => 'a', modifier => '+' }]
           }]
@@ -127,12 +127,12 @@ run_test
   q{A:(a)+;},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [{
       concatenation =>
         [{
         modifier => '+', 
-        alternation =>
+        alternative =>
           [{
           concatenation => [{ name => 'a' }]
           }]
@@ -149,7 +149,7 @@ run_test
   q{A:a b;},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [{
       concatenation =>
         [
@@ -168,7 +168,7 @@ run_test
   q{A:a|b;},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [
       { concatenation => [{ name => 'a' }] },
       { concatenation => [{ name => 'b' }] }
@@ -184,12 +184,12 @@ run_test
   q{A:(a)+|b;},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [{
       concatenation =>
         [{
         modifier => '+', 
-        alternation =>
+        alternative =>
           [{
           concatenation => [{ name => 'a' }]
           }]
@@ -207,12 +207,12 @@ run_test
 ;},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [{
       concatenation =>
         [{
         modifier => '+', 
-        alternation =>
+        alternative =>
           [{
           concatenation => [{ name => 'a' }]
           }]
@@ -230,12 +230,12 @@ run_test
 b;},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [{
       concatenation =>
         [{
         modifier => '+', 
-        alternation =>
+        alternative =>
           [{
           concatenation => [{ name => 'a' }]
           }]
@@ -253,12 +253,12 @@ run_test
 |b;},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [{
       concatenation =>
         [{
         modifier => '+', 
-        alternation =>
+        alternative =>
           [{
           concatenation => [{ name => 'a' }]
           }]
@@ -276,12 +276,12 @@ run_test
 +|b;},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [{
       concatenation =>
         [{
         modifier => '+', 
-        alternation =>
+        alternative =>
           [{
           concatenation => [{ name => 'a' }]
           }]
@@ -299,12 +299,12 @@ run_test
 )+|b;},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [{
       concatenation =>
         [{
         modifier => '+', 
-        alternation =>
+        alternative =>
           [{
           concatenation => [{ name => 'a' }]
           }]
@@ -322,12 +322,12 @@ run_test
 a)+|b;},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [{
       concatenation =>
         [{
         modifier => '+', 
-        alternation =>
+        alternative =>
           [{
           concatenation => [{ name => 'a' }]
           }]
@@ -345,12 +345,12 @@ run_test
 (a)+|b;},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [{
       concatenation =>
         [{
         modifier => '+', 
-        alternation =>
+        alternative =>
           [{
           concatenation => [{ name => 'a' }]
           }]
@@ -368,12 +368,12 @@ run_test
 :(a)+|b;},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [{
       concatenation =>
         [{
         modifier => '+', 
-        alternation =>
+        alternative =>
           [{
           concatenation => [{ name => 'a' }]
           }]
@@ -391,12 +391,12 @@ run_test
 A:(a)+|b;},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [{
       concatenation =>
         [{
         modifier => '+', 
-        alternation =>
+        alternative =>
           [{
           concatenation => [{ name => 'a' }]
           }]
@@ -417,12 +417,12 @@ A : ( a ) +
 },
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [{
       concatenation =>
         [{
         modifier => '+', 
-        alternation =>
+        alternative =>
           [{
           concatenation => [{ name => 'a' }]
           }]

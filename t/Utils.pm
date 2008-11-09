@@ -28,10 +28,10 @@ sub join_rules
   for my $rule ( @$rules )
     {
     push @{$reconstructed{$rule->{name}}},
-      @{$rule->{alternation}};
+      @{$rule->{alternative}};
     }
 
-  return [ map { { name => $_, alternation => $reconstructed{$_} } } @names ]
+  return [ map { { name => $_, alternative => $reconstructed{$_} } } @names ]
   }
 
 # }}}
@@ -45,8 +45,8 @@ sub term
   {
   my ( $term ) = @_;
   my $text;
-  $text = $term->{alternation} ?
-    q{(} . alternation($term->{alternation}) . q{)} :
+  $text = $term->{alternative} ?
+    q{(} . alternative($term->{alternative}) . q{)} :
     $term->{name};
 
   $text .= $term->{modifier} if $term->{modifier};
@@ -68,15 +68,15 @@ sub concatenation
 
 # }}}
 
-=head2 alternation
+=head2 alternative
 
 =cut
 
-# {{{ alternation($alternation)
-sub alternation
+# {{{ alternative($alternative)
+sub alternative
   {
-  my ( $alternation ) = @_;
-  return join qq{ | }, map { concatenation($_->{concatenation}) } @$alternation;
+  my ( $alternative ) = @_;
+  return join qq{ | }, map { concatenation($_->{concatenation}) } @$alternative;
   }
 
 # }}}
@@ -89,8 +89,8 @@ sub alternation
 sub rule
   {
   my ( $rule ) = @_;
-  my $alternation = alternation($rule->{alternation});
-  return "$rule->{name} : $alternation ;";
+  my $alternative = alternative($rule->{alternative});
+  return "$rule->{name} : $alternative ;";
   }
 
 # }}}

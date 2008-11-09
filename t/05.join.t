@@ -46,7 +46,7 @@ run_test
   q{A:a;A:b;},
     [{
     name => 'A',
-    alternation =>
+    alternative =>
       [
       { concatenation => [{ name => 'a' }] },
       { concatenation => [{ name => 'b' }] }
@@ -62,14 +62,14 @@ run_test
   q{C:d;A:a;A:b;B:c;},
     [{
     name => 'C',
-    alternation => 
+    alternative => 
       [
       { concatenation => [{ name => 'd' }] }
       ],
     },
     {
     name => 'A',
-    alternation =>
+    alternative =>
       [
       { concatenation => [{ name => 'a' }] },
       { concatenation => [{ name => 'b' }] }
@@ -77,7 +77,7 @@ run_test
     },
     {
     name => 'B',
-    alternation =>
+    alternative =>
      [
      { concatenation => [{ name => 'c' }] }
      ],

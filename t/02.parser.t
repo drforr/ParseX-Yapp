@@ -92,7 +92,7 @@ a:;] => 1,
   q[a:(b a);] => 1,
   q[a:(b|a);] => 1,
 
-  # Make sure precedences are *only* at the end of a top-level alternation.
+  # Make sure precedences are *only* at the end of a top-level alternative.
   q[a:(b|a %prec NULL);] => 0,
   q[a:(%prec NULLb|a %prec NULL);] => 0,
   q[a:()();] => 1,

@@ -41,10 +41,10 @@ rules
   ;
 
 rule
-  : rule_name ':' opt_alternation ';'
+  : rule_name ':' opt_alternative ';'
   { my %h = ( name => $_[1]{name} );
     $h{parameter_list} = $_[1]{parameter_list} if $_[1]{parameter_list};
-    $h{alternation}    = $_[3] if $_[3];
+    $h{alternative}    = $_[3] if $_[3];
     \%h
   }
   ;
@@ -57,27 +57,27 @@ rule_name
   ;
 
 #
-# opt_alternation could better be done as:
-# opt_alternation : ( alternation ( '|' alternation )* )?
+# opt_alternative could better be done as:
+# opt_alternative : ( alternative ( '|' alternative )* )?
 #
 # Eventually:
 # sep-list<sep,element> : ( element ( sep element )* )? ;
-# opt_alternation : sep-list<'|',alternation> ;
+# opt_alternative : sep-list<'|',alternative> ;
 #
-opt_alternation
+opt_alternative
   : LAMBDA
-  | alternation
+  | alternative
   { [ $_[1] ] }
-  | opt_alternation '|' alternation
+  | opt_alternative '|' alternative
   { push @{$_[1]}, $_[3]; $_[1] }
   ;
 
 #
 # This can eventually be truncated to:
-# alternation : precedence? codeblock? ;
+# alternative : precedence? codeblock? ;
 # And remove 2 rules.
 #
-alternation
+alternative
   : opt_concatenation opt_precedence opt_codeblock
   { my %h = ( concatenation => $_[1] );
     $h{precedence} = $_[2] if $_[2];
@@ -100,18 +100,18 @@ term
     $h{modifier} = $_[2] if $_[2];
     \%h
   }
-  | '(' opt_subalternation ')' opt_modifier
-  { my %h = ( alternation => $_[2] );
+  | '(' opt_subalternative ')' opt_modifier
+  { my %h = ( alternative => $_[2] );
     $h{modifier} = $_[4] if $_[4];
     \%h
   }
   ;
 
-opt_subalternation
+opt_subalternative
   : LAMBDA
   | opt_concatenation
   { [ { concatenation => $_[1] } ] }
-  | opt_subalternation '|' opt_concatenation
+  | opt_subalternative '|' opt_concatenation
   { push @{$_[1]}, { concatenation => $_[3] }; $_[1] }
   ;
 
