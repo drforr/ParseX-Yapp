@@ -1,6 +1,6 @@
 use warnings;
 use strict;
-use Test::More tests => 6;
+use Test::More tests => 4;
 use YAML;
 
 BEGIN
@@ -40,18 +40,92 @@ sub run_test
 
 # }}}
 
+# {{{ _make_name($rule_name,$cur_alternative,$cur_concatenation,$modifier);
+my %modifier_map =
+  (
+  '?' => 'ques',
+  '*' => 'star',
+  '+' => 'plus',
+  );
+sub _make_name
+  {
+  my ( $rule_name, $cur_alternative, $cur_concatenation, $modifier ) = @_;
+  my $mod = $modifier_map{$modifier};
+  return "_${rule_name}_alt_${cur_alternative}_term_${cur_concatenation}_$mod";
+  }
+
+# }}}
+
+# {{{ _create_rule($rule_name,$term_name,$modifier)
+sub _create_rule
+  {
+  my ( $rule_name, $term_name, $modifier ) = @_;
+  my $new_rule =
+    {
+    name => $rule_name,
+    };
+
+  if ( $modifier eq '?' )
+    {
+    $new_rule->{alternative} =
+      [
+      { concatenation => [{ name => 'LAMBDA' }] },
+      { concatenation => [{ name => $term_name }] },
+      ];
+    }
+  elsif ( $modifier eq '*' )
+    {
+    $new_rule->{alternative} =
+      [
+      { concatenation => [{ name => 'LAMBDA' }] },
+      { concatenation => [{ name => $term_name }] },
+      { concatenation => [{ name => $rule_name }, { name => $term_name }] },
+      ];
+    }
+  elsif ( $modifier eq '+' )
+    {
+    $new_rule->{alternative} =
+      [
+      { concatenation => [{ name => $term_name }] },
+      { concatenation => [{ name => $rule_name }, { name => $term_name }] },
+      ];
+    }
+  else
+    {
+    die "Unknown modifier name! This shouldn't happen!";
+    }
+  return $new_rule;
+  }
+
+# }}}
+
 # {{{ _simplify_rule($rule)
 sub _simplify_rule
   {
   my ( $rule ) = @_;
+  my $rule_name = $rule->{name};
   my @new_rules;
 
+  my $cur_alternative = 0;
   for my $alternative ( @{$rule->{alternative}} )
     {
+    $cur_alternative++;
+    my $cur_concatenation = 0;
     for my $concatenation ( @{$alternative->{concatenation}} )
       {
+      $cur_concatenation++;
       next unless $concatenation->{modifier};
-die "Found modifier on rule '$rule->{name}'\n";
+
+      my $term_name = $concatenation->{name};
+      my $modifier = $concatenation->{modifier};
+      delete $concatenation->{modifier};
+#use YAML; die Dump($concatenation);
+
+      my $rule_name =
+        _make_name($rule_name,$cur_alternative,$cur_concatenation,$modifier);
+
+      push @new_rules, _create_rule($rule_name,$term_name,$modifier);
+      $concatenation->{name} = $rule_name;
       }
     }
 
@@ -89,11 +163,11 @@ run_test
     name => 'A',
     alternative =>
       [
-      { concatenation => [{ name => '_A_alt_1_term_1' }] }
+      { concatenation => [{ name => '_A_alt_1_term_1_ques' }] }
       ]
     },
     {
-    name => '_A_alt_1_term_1',
+    name => '_A_alt_1_term_1_ques',
     alternative =>
       [
       { concatenation => [{ name => 'LAMBDA' }] },
