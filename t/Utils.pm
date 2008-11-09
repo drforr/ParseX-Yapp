@@ -4,6 +4,38 @@ use warnings;
 use strict;
 use Carp;
 
+=head2 join_rules($rules)
+
+=cut
+
+# {{{ join_rules($rules)
+sub join_rules
+  {
+  my ( $rules ) = @_;
+  my @names;
+  my %reconstructed;
+
+# {{{ Collect the rule names in order of usage for later reconstruction
+  for my $rule ( @$rules )
+    {
+    my $rule_name = $rule->{name};
+    next if grep { $_ eq $rule_name } @names;
+    push @names, $rule_name;
+    }
+
+# }}}
+
+  for my $rule ( @$rules )
+    {
+    push @{$reconstructed{$rule->{name}}},
+      @{$rule->{alternation}};
+    }
+
+  return [ map { { name => $_, alternation => $reconstructed{$_} } } @names ]
+  }
+
+# }}}
+
 =head2 term
 
 =cut
