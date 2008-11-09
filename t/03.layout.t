@@ -1,6 +1,7 @@
 use warnings;
 use strict;
-use Test::More tests => 37;
+use Test::More tests => 39;
+use YAML;
 
 BEGIN
   {
@@ -34,6 +35,17 @@ sub run_test
   ok( defined($final), qq{valid parse of q{$str}} );
   is_deeply( $final, $layout, qq{conforming parse of q{$str}} );
   }
+
+# }}}
+
+# {{{ A:;
+run_test
+  (
+  q{LAMBDA:;},
+    [{
+    name => 'LAMBDA'
+    }], 0
+  );
 
 # }}}
 

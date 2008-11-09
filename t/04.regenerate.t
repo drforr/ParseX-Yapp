@@ -1,6 +1,6 @@
 use warnings;
 use strict;
-use Test::More tests => 6;
+use Test::More tests => 8;
 
 BEGIN
   {
@@ -33,6 +33,16 @@ sub parse
 # 
 # Why not encapsulate it?
 #
+
+{
+my $str = q{A :  ;};
+ok( $str eq Utils::rules(parse($str)), qq{q{$str}} );
+
+ok( $str eq Utils::rules(parse(<<'_EOF_')), qq{q{$str}} );
+A : 
+  ;
+_EOF_
+}
 
 {
 my $str = q{A : ((a) b*)+ | b* ;};
