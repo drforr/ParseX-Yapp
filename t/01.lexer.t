@@ -1,10 +1,12 @@
+use warnings;
+use strict;
 use Test::More tests => 15;
 
 BEGIN
-{
-use Parse::Yapp;
-use_ok( 'ParseX::Yapp' );
-}
+  {
+  use Parse::Yapp;
+  use_ok( 'ParseX::Yapp' );
+  }
 
 my $lexer_grammar = <<'_EOF_';
 

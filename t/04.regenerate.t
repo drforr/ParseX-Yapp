@@ -1,10 +1,13 @@
-use Test::More tests => 5;
+use warnings;
+use strict;
+use Test::More tests => 6;
 
 BEGIN
   {
   use Parse::Yapp;
-  use YAML;
+  use lib './t';
   use_ok( 'ParseX::Yapp' );
+  use_ok( 'Utils' );
   }
 
 # {{{ stuff
@@ -21,58 +24,6 @@ sub parse
 
 # }}}
 
-# {{{ term($term)
-sub term
-  {
-  my ( $term ) = @_;
-  my $text;
-  $text = $term->{alternation} ?
-    q{(} . alternation($term->{alternation}) . q{)} :
-    $term->{name};
-
-  $text .= $term->{modifier} if $term->{modifier};
-  return $text;
-  }
-
-# }}}
-
-# {{{ concatenation($concatenation)
-sub concatenation
-  {
-  my ( $concatenation ) = @_;
-  return join q{ }, map { term($_) } @$concatenation;
-  }
-
-# }}}
-
-# {{{ alternation($alternation)
-sub alternation
-  {
-  my ( $alternation ) = @_;
-  return join qq{ | }, map { concatenation($_->{concatenation}) } @$alternation;
-  }
-
-# }}}
-
-# {{{ rule($rule)
-sub rule
-  {
-  my ( $rule ) = @_;
-  my $alternation = alternation($rule->{alternation});
-  return "$rule->{name} : $alternation ;";
-  }
-
-# }}}
-
-# {{{ rules($rules)
-sub rules
-  {
-  my ( $rules ) = @_;
-  return join qq{\n}, map { rule($_) } @$rules;
-  }
-
-# }}}
-
 #
 # This seems to be a pretty common thing to do:
 #
@@ -85,9 +36,9 @@ sub rules
 
 {
 my $str = q{A : ((a) b*)+ | b* ;};
-ok( $str eq rules(parse($str)), qq{q{$str}} );
+ok( $str eq Utils::rules(parse($str)), qq{q{$str}} );
 
-ok( $str eq rules(parse(<<'_EOF_')), qq{q{$str}} );
+ok( $str eq Utils::rules(parse(<<'_EOF_')), qq{q{$str}} );
 A : ( (a) b*)+
   | b*
   ;
@@ -96,9 +47,9 @@ _EOF_
 
 {
 my $str = q{A : ((foo) b*)+ | 'modifier'* ;};
-ok( $str eq rules(parse($str)), qq{q{$str}} );
+ok( $str eq Utils::rules(parse($str)), qq{q{$str}} );
 
-ok( $str eq rules(parse(<<'_EOF_')), qq{q{$str}} );
+ok( $str eq Utils::rules(parse(<<'_EOF_')), qq{q{$str}} );
 A : ( (foo) b*)+
   | 'modifier'*
   ;

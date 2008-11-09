@@ -1,9 +1,13 @@
-use Test::More tests => 1;
+use warnings;
+use strict;
+use Test::More tests => 2;
 
 BEGIN
   {
   use Parse::Yapp;
+  use lib './t';
   use_ok( 'ParseX::Yapp' );
+  use_ok( 'Utils' );
   }
 
 # {{{ stuff
@@ -35,57 +39,48 @@ sub run_test
 
 # }}}
 
-# {{{ term($term)
-sub term
-  {
-  my ( $term ) = @_;
-  my $text;
-  $text = $term->{alternation} ?
-    q{(} . alternation($term->{alternation}) . q{)} :
-    $term->{name};
-
-  $text .= $term->{modifier} if $term->{modifier};
-  return $text;
-  }
-
-# }}}
-
-# {{{ concatenation($concatenation)
-sub concatenation
-  {
-  my ( $concatenation ) = @_;
-  return join q{ }, map { term($_) } @$concatenation;
-  }
-
-# }}}
-
-# {{{ alternation($alternation)
-sub alternation
-  {
-  my ( $alternation ) = @_;
-  return join qq{ | }, map { concatenation($_->{concatenation}) } @$alternation;
-  }
-
-# }}}
-
-# {{{ rule($rule)
-sub rule
-  {
-  my ( $rule ) = @_;
-  my $alternation = alternation($rule->{alternation});
-  return "$rule->{name} : $alternation ;";
-  }
-
-# }}}
-
-# {{{ rules($rules)
-sub rules
+# {{{ join_rules($rules)
+sub join_rules
   {
   my ( $rules ) = @_;
-  return join qq{\n}, map { rule($_) } @$rules;
+  my %reconstructed;
+
+  for my $rule ( @$rules )
+    {
+    my $rule_name = $rule->{name};
+    push @{$reconstructed{$rule_name}{alternation}},
+      @{$rule->{alternation}};
+    }
+  return \%reconstructed;
   }
 
 # }}}
+
+die Utils::rules(parse(q{A:a;B:b+;}));
+
+#use YAML; die Dump(join_rules(parse(q{A:a;A:b|c;A:d;})));
+
+# {{{ A:a;
+run_test
+  (
+  q{A:a;},
+    [{
+    name => 'A',
+    alternation =>
+      [{
+      concatenation => [{ name => 'a' }]
+      }]
+    }], 0
+  );
+
+# }}}
+
+#ok( $str eq rules(parse(<<'_EOF_')), qq{q{$str}} );
+use YAML; die Dump(parse(<<'_EOF_'));
+A : ( (foo) b*)+
+  | 'modifier'*
+  ;
+_EOF_
 
 =pod
 
