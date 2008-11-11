@@ -56,39 +56,66 @@ sub _make_name
 
 # }}}
 
+# {{{ __ques($term_name)
+sub __ques
+  {
+  my ( $term_name ) = @_;
+  return
+    [
+      { concatenation => [{ name => q{LAMBDA} }] },
+      { concatenation => [{ name => $term_name }] },
+    ]
+  }
+
+# }}}
+
+# {{{ __star($term_name,$rule_name)
+sub __star
+  {
+  my ( $term_name, $rule_name ) = @_;
+  return
+    [
+      { concatenation => [{ name => q{LAMBDA} }] },
+      { concatenation => [{ name => $term_name }] },
+      { concatenation => [{ name => $rule_name }, { name => $term_name }] },
+    ]
+  }
+
+# }}}
+
+# {{{ __plus($term_name,$rule_name)
+sub __plus
+  {
+  my ( $term_name, $rule_name ) = @_;
+  return
+    [
+      { concatenation => [{ name => $term_name }] },
+      { concatenation => [{ name => $rule_name }, { name => $term_name }] },
+    ]
+  }
+
+# }}}
+
 # {{{ _create_rule($rule_name,$term_name,$modifier)
 sub _create_rule
   {
   my ( $rule_name, $term_name, $modifier ) = @_;
   my $new_rule =
     {
-    name => $rule_name,
+    name => $rule_name
     };
 
   if ( $modifier eq '?' )
     {
-    $new_rule->{alternative} =
-      [
-      { concatenation => [{ name => 'LAMBDA' }] },
-      { concatenation => [{ name => $term_name }] },
-      ];
+    $new_rule->{alternative} = __ques($term_name);
     }
   elsif ( $modifier eq '*' )
     {
-    $new_rule->{alternative} =
-      [
-      { concatenation => [{ name => 'LAMBDA' }] },
-      { concatenation => [{ name => $term_name }] },
-      { concatenation => [{ name => $rule_name }, { name => $term_name }] },
-      ];
+    $new_rule->{alternative} = __star($term_name,$rule_name);
     }
   elsif ( $modifier eq '+' )
     {
-    $new_rule->{alternative} =
-      [
-      { concatenation => [{ name => $term_name }] },
-      { concatenation => [{ name => $rule_name }, { name => $term_name }] },
-      ];
+    $new_rule->{alternative} = __plus($term_name,$rule_name);
     }
   else
     {
@@ -106,23 +133,20 @@ sub _simplify_rule
   my $rule_name = $rule->{name};
   my @new_rules;
 
-  my $cur_alternative = 0;
-  for my $alternative ( @{$rule->{alternative}} )
+  for ( my $i = 0; $i < @{$rule->{alternative}}; $i++ )
     {
-    $cur_alternative++;
-    my $cur_concatenation = 0;
-    for my $concatenation ( @{$alternative->{concatenation}} )
+    my $alternative = $rule->{alternative}[$i];
+    for ( my $j = 0; $j < @{$alternative->{concatenation}}; $j++ )
       {
-      $cur_concatenation++;
+      my $concatenation = $alternative->{concatenation}[$j];
       next unless $concatenation->{modifier};
 
       my $term_name = $concatenation->{name};
       my $modifier = $concatenation->{modifier};
       delete $concatenation->{modifier};
-#use YAML; die Dump($concatenation);
 
       my $rule_name =
-        _make_name($rule_name,$cur_alternative,$cur_concatenation,$modifier);
+        _make_name($rule_name,$i+1,$j+1,$modifier);
 
       push @new_rules, _create_rule($rule_name,$term_name,$modifier);
       $concatenation->{name} = $rule_name;
@@ -159,24 +183,26 @@ sub simplify
 run_test
   (
   q{A:'foo'?;},
-    [{
-    name => 'A',
-    alternative =>
-      [
-      { concatenation => [{ name => '_A_alt_1_term_1_ques' }] }
-      ]
-    },
-    {
-    name => '_A_alt_1_term_1_ques',
-    alternative =>
-      [
-      { concatenation => [{ name => 'LAMBDA' }] },
-      { concatenation => [{ name => q{'foo'} }] },
-      ]
-    },
-    {
-    name => 'LAMBDA',
-    }], 0
+    [
+      {
+      name => 'A',
+      alternative =>
+        [
+          { concatenation => [{ name => q{_A_alt_1_term_1_ques} }] }
+        ]
+      },
+      {
+      name => '_A_alt_1_term_1_ques',
+      alternative =>
+        [
+          { concatenation => [{ name => q{LAMBDA} }] },
+          { concatenation => [{ name => q{'foo'} }] },
+        ]
+      },
+      {
+      name => q{LAMBDA},
+      }
+    ], 0
   );
 
 # }}}
@@ -188,7 +214,8 @@ A : 'modifier'?
 
 =>
 
-A : _A_alt_1_term_1 ;
+A : _A_alt_1_term_1
+  ;
 _A_alt_1_term_1
   : LAMBDA
   | 'modifier'
@@ -205,7 +232,7 @@ _gensym_0x12345
   : LAMBDA
   | 'modifier'
   | _gensym_0x12345 'modifier'
-  ; 
+  ;
 
 ------
 
