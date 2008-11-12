@@ -1,6 +1,6 @@
 use warnings;
 use strict;
-use Test::More tests => 4;
+use Test::More tests => 8;
 use YAML;
 
 BEGIN
@@ -82,14 +82,6 @@ sub __ques
 
 # }}}
 
-#
-# _blah
-#  : LAMBDA
-#  | 'blah' { [ $_[1] ] }
-#  | _blah 'blah' { [ $_[1] ] }
-#  ;
-#
-
 # {{{ __star($term_name,$rule_name)
 #
 # A : 'modifier'*
@@ -110,8 +102,10 @@ sub __star
   return
     [
       { concatenation => [{ name => q{LAMBDA} }] },
-      { concatenation => [{ name => $term_name }] },
-      { concatenation => [{ name => $rule_name }, { name => $term_name }] },
+      {
+      concatenation => [{ name => $rule_name }, { name => $term_name }],
+      codeblock => q{{ push @{$_[1]}, $_[2]; $_[1] }}
+      },
     ]
   }
 
@@ -250,6 +244,70 @@ run_test
       {
       name => q{LAMBDA},
       }
+    ], 0
+  );
+
+# }}}
+
+# {{{ Simplify A:'foo'?{};
+run_test
+  (
+  q{A:'foo'?{$_++};},
+    [
+      {
+      name => 'A',
+      alternative =>
+        [
+          {
+          concatenation => [{ name => q{_A_alt_1_term_1_ques} }],
+          codeblock => q{{$_++}}
+          }
+        ]
+      },
+      {
+      name => '_A_alt_1_term_1_ques',
+      alternative =>
+        [
+          { concatenation => [{ name => q{LAMBDA} }] },
+          { concatenation => [{ name => q{'foo'} }] },
+        ]
+      },
+      {
+      name => q{LAMBDA},
+      }
+    ], 0
+  );
+
+# }}}
+
+# {{{ Simplify A:'foo'*;
+run_test
+  (
+  q{A:'foo'*;},
+    [
+      {
+      name => 'A',
+      alternative =>
+        [
+          { concatenation => [{ name => q{_A_alt_1_term_1_star} }] }
+        ]
+      },
+      {
+      name => '_A_alt_1_term_1_star',
+      alternative =>
+        [
+          { concatenation => [{ name => q{LAMBDA} }] },
+          {
+          concatenation =>
+            [
+              { name => q{_A_alt_1_term_1_star} },
+              { name => q{'foo'} }
+            ],
+          codeblock => q{{ push @{$_[1]}, $_[2]; $_[1] }}
+          },
+        ]
+      },
+      { name => q{LAMBDA} }
     ], 0
   );
 
