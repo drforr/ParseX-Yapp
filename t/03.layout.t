@@ -1,6 +1,6 @@
 use warnings;
 use strict;
-use Test::More tests => 39;
+use Test::More tests => 43;
 use YAML;
 
 BEGIN
@@ -44,6 +44,22 @@ run_test
   q{LAMBDA:;},
     [{
     name => 'LAMBDA'
+    }], 0
+  );
+
+# }}}
+
+# {{{ A:{};
+run_test
+  (
+  q{A:{};},
+    [{
+    name => 'A',
+    alternative =>
+      [{
+      concatenation => undef,
+      codeblock => q{{}},
+      }]
     }], 0
   );
 
@@ -94,6 +110,22 @@ run_test
     alternative =>
       [{
       concatenation => [{ name => 'a', modifier => '+' }]
+      }]
+    }], 0
+  );
+
+# }}}
+
+# {{{ A:a+{};
+run_test
+  (
+  q{A:a+{};},
+    [{
+    name => 'A',
+    alternative =>
+      [{
+      concatenation => [{ name => 'a', modifier => '+' }],
+      codeblock => q{{}}
       }]
     }], 0
   );

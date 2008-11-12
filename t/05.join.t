@@ -1,6 +1,6 @@
 use warnings;
 use strict;
-use Test::More tests => 6;
+use Test::More tests => 8;
 use YAML;
 
 BEGIN
@@ -73,6 +73,36 @@ run_test
       [
       { concatenation => [{ name => 'a' }] },
       { concatenation => [{ name => 'b' }] }
+      ]
+    },
+    {
+    name => 'B',
+    alternative =>
+     [
+     { concatenation => [{ name => 'c' }] }
+     ],
+    }], 0
+  );
+
+# }}}
+
+# {{{ Test more than one rule outbound
+run_test
+  (
+  q{C:d;A:a{1++};A:b{++2};B:c;},
+    [{
+    name => 'C',
+    alternative => 
+      [
+      { concatenation => [{ name => 'd' }] }
+      ],
+    },
+    {
+    name => 'A',
+    alternative =>
+      [
+      { concatenation => [{ name => 'a' }], codeblock => q{{1++}} },
+      { concatenation => [{ name => 'b' }], codeblock => q{{++2}} }
       ]
     },
     {

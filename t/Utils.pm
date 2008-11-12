@@ -27,7 +27,7 @@ sub join_rules
 
   for my $rule ( @$rules )
     {
-    push @{$reconstructed{$rule->{name}}},
+    push @{$reconstructed{ $rule->{name} }},
       @{$rule->{alternative}};
     }
 
@@ -76,7 +76,14 @@ sub concatenation
 sub alternative
   {
   my ( $alternative ) = @_;
-  return join qq{ | }, map { concatenation($_->{concatenation}) } @$alternative;
+  return join qq{ | }, map
+    {
+    my $text = concatenation($_->{concatenation});
+    $text .= " $_->{codeblock}"
+      if $_->{codeblock};
+    $text;
+    }
+  @$alternative;
   }
 
 # }}}

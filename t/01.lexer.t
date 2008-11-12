@@ -1,6 +1,6 @@
 use warnings;
 use strict;
-use Test::More tests => 15;
+use Test::More tests => 16;
 
 BEGIN
   {
@@ -19,6 +19,7 @@ input : # empty
 syntax :
     identifier {[ 'identifier', $_[1] ]}
   | string     {[ 'string',     $_[1] ]}
+  | codeblock  {[ 'codeblock',  $_[1] ]}
   | ':'        {[ $_[1],        $_[1] ]}
   | ';'        {[ ';',          $_[1] ]}
   ;
@@ -92,6 +93,14 @@ is_deeply
 
 is_deeply
   (
+  parse( q{{$_[1]}} ),
+  [ [ 'codeblock', q{{$_[1]}} ] ],
+  q{codeblock.1}
+  );
+
+
+is_deeply
+  (
   parse( qq{'a' 'b'} ),
   [
   [ q{string}, q{'a'} ],
@@ -143,13 +152,14 @@ is_deeply
 
 is_deeply
   (
-  parse( qq{"1, 2, 'foo'" : bar-foo;'hi there'} ),
+  parse( qq{"1, 2, 'foo'" : bar-foo;'hi there' }.q{{$_[1]++}} ),
     [
     [ q{string},     q{"1, 2, 'foo'"} ],
     [ q{:},          q{:}             ],
     [ q{identifier}, q{bar-foo}       ],
     [ q{;},          q{;}             ],
     [ q{string},     q{'hi there'}    ],
+    [ q{codeblock},  q{{$_[1]++}}     ],
     ],
   q{compound.2}
   );

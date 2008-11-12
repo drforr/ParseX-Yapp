@@ -1,6 +1,6 @@
 use warnings;
 use strict;
-use Test::More tests => 8;
+use Test::More tests => 10;
 
 BEGIN
   {
@@ -61,6 +61,17 @@ ok( $str eq Utils::rules(parse($str)), qq{q{$str}} );
 
 ok( $str eq Utils::rules(parse(<<'_EOF_')), qq{q{$str}} );
 A : ( (foo) b*)+
+  | 'modifier'*
+  ;
+_EOF_
+}
+
+{
+my $str = q{A : ((foo) b*)+ { $_[2] = '' } | 'modifier'* ;};
+ok( $str eq Utils::rules(parse($str)), qq{q{$str}} );
+
+ok( $str eq Utils::rules(parse(<<'_EOF_')), qq{q{$str}} );
+A : ( (foo) b*)+ { $_[2] = '' }
   | 'modifier'*
   ;
 _EOF_

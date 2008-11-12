@@ -9,7 +9,8 @@ t/01.lexer.t
 t/02.parser.t
 t/03.layout.t
 t/04.regenerate.t
-t/05.simplify.t
+t/05.join.t
+t/06.simplify.t
 t/perlcritic.t
 t/pod-coverage.t
 t/pod.t

@@ -57,6 +57,19 @@ sub _make_name
 # }}}
 
 # {{{ __ques($term_name)
+#
+# A : 'modifier'?
+#   ;
+# 
+# =>
+# 
+# A : _A_alt_1_term_1
+#   ;
+# _A_alt_1_term_1
+#   : LAMBDA
+#   | 'modifier'
+#   ;
+#
 sub __ques
   {
   my ( $term_name ) = @_;
@@ -69,7 +82,28 @@ sub __ques
 
 # }}}
 
+#
+# _blah
+#  : LAMBDA
+#  | 'blah' { [ $_[1] ] }
+#  | _blah 'blah' { [ $_[1] ] }
+#  ;
+#
+
 # {{{ __star($term_name,$rule_name)
+#
+# A : 'modifier'*
+#   ;
+# 
+# =>
+# 
+# A : _A_alt_1_term_1
+#   ;
+# _A_alt_1_term_1
+#   : LAMBDA
+#   | _a_alt_1_term_1 'modifier'
+#   ;
+#
 sub __star
   {
   my ( $term_name, $rule_name ) = @_;
@@ -84,6 +118,20 @@ sub __star
 # }}}
 
 # {{{ __plus($term_name,$rule_name)
+#
+# A : 'modifier'+
+#   ;
+# 
+# =>
+# 
+# A : _A_alt_1_term_1
+#   ;
+# _A_alt_1_term_1
+#   : LAMBDA
+#   | 'modifier'
+#   | _a_alt_1_term_1 'modifier'
+#   ;
+#
 sub __plus
   {
   my ( $term_name, $rule_name ) = @_;
@@ -206,46 +254,3 @@ run_test
   );
 
 # }}}
-
-=pod
-
-A : 'modifier'?
-  ;
-
-=>
-
-A : _A_alt_1_term_1
-  ;
-_A_alt_1_term_1
-  : LAMBDA
-  | 'modifier'
-  ;
-
-------
-
-A : 'modifier'*
-  ;
-
-A : _gensym_0x12345
-  ;
-_gensym_0x12345
-  : LAMBDA
-  | 'modifier'
-  | _gensym_0x12345 'modifier'
-  ;
-
-------
-
-A : 'modifier'+
-  ;
-
-=>
-
-A : _gensym_0x12345
-  ;
-_gensym_0x12345
-  : 'modifier'
-  | _gensym_0x12345 'modifier'
-  ;
-
-=cut
