@@ -49,15 +49,15 @@ run_test
       name => 'A',
       alternative =>
         [
-          { concatenation => [{ name => q{_A_alt_1_term_1_ques} }] }
+          { concatenation => [ { name => q{_A_alt_1_term_1_ques} } ] }
         ]
       },
       {
       name => '_A_alt_1_term_1_ques',
       alternative =>
         [
-          { concatenation => [{ name => q{LAMBDA} }] },
-          { concatenation => [{ name => q{'foo'} }] },
+          { concatenation => [ { name => q{LAMBDA} } ] },
+          { concatenation => [ { name => q{'foo'} } ] },
         ]
       },
       { name => q{LAMBDA} }
@@ -76,7 +76,7 @@ run_test
       alternative =>
         [
           {
-          concatenation => [{ name => q{_A_alt_1_term_1_ques} }],
+          concatenation => [ { name => q{_A_alt_1_term_1_ques} } ],
           codeblock => q{{$_++}}
           }
         ]
@@ -85,8 +85,8 @@ run_test
       name => '_A_alt_1_term_1_ques',
       alternative =>
         [
-          { concatenation => [{ name => q{LAMBDA} }] },
-          { concatenation => [{ name => q{'foo'} }] },
+          { concatenation => [ { name => q{LAMBDA} } ] },
+          { concatenation => [ { name => q{'foo'} } ] },
         ]
       },
       { name => q{LAMBDA} }
@@ -104,14 +104,14 @@ run_test
       name => 'A',
       alternative =>
         [
-          { concatenation => [{ name => q{_A_alt_1_term_1_star} }] }
+          { concatenation => [ { name => q{_A_alt_1_term_1_star} } ] }
         ]
       },
       {
       name => '_A_alt_1_term_1_star',
       alternative =>
         [
-          { concatenation => [{ name => q{LAMBDA} }] },
+          { concatenation => [ { name => q{LAMBDA} } ] },
           {
           concatenation =>
             [

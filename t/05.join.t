@@ -44,14 +44,16 @@ sub run_test
 run_test
   (
   q{A:a;A:b;},
-    [{
-    name => 'A',
-    alternative =>
-      [
-      { concatenation => [{ name => 'a' }] },
-      { concatenation => [{ name => 'b' }] }
-      ]
-    }], 0
+    [
+      {
+      name => 'A',
+      alternative =>
+        [
+          { concatenation => [ { name => 'a' } ] },
+          { concatenation => [ { name => 'b' } ] }
+        ]
+      }
+    ], 0
   );
 
 # }}}
@@ -60,28 +62,30 @@ run_test
 run_test
   (
   q{C:d;A:a;A:b;B:c;},
-    [{
-    name => 'C',
-    alternative => 
-      [
-      { concatenation => [{ name => 'd' }] }
-      ],
-    },
-    {
-    name => 'A',
-    alternative =>
-      [
-      { concatenation => [{ name => 'a' }] },
-      { concatenation => [{ name => 'b' }] }
-      ]
-    },
-    {
-    name => 'B',
-    alternative =>
-     [
-     { concatenation => [{ name => 'c' }] }
-     ],
-    }], 0
+    [
+      {
+      name => 'C',
+      alternative => 
+        [
+          { concatenation => [ { name => 'd' } ] }
+        ],
+      },
+      {
+      name => 'A',
+      alternative =>
+        [
+          { concatenation => [ { name => 'a' } ] },
+          { concatenation => [ { name => 'b' } ] }
+        ]
+      },
+      {
+      name => 'B',
+      alternative =>
+       [
+         { concatenation => [ { name => 'c' } ] }
+       ],
+      }
+    ], 0
   );
 
 # }}}
@@ -90,28 +94,30 @@ run_test
 run_test
   (
   q{C:d;A:a{1++};A:b{++2};B:c;},
-    [{
-    name => 'C',
-    alternative => 
-      [
-      { concatenation => [{ name => 'd' }] }
-      ],
-    },
-    {
-    name => 'A',
-    alternative =>
-      [
-      { concatenation => [{ name => 'a' }], codeblock => q{{1++}} },
-      { concatenation => [{ name => 'b' }], codeblock => q{{++2}} }
-      ]
-    },
-    {
-    name => 'B',
-    alternative =>
-     [
-     { concatenation => [{ name => 'c' }] }
-     ],
-    }], 0
+    [
+      {
+      name => 'C',
+      alternative => 
+        [
+          { concatenation => [ { name => 'd' } ] }
+        ],
+      },
+      {
+      name => 'A',
+      alternative =>
+        [
+          { concatenation => [ { name => 'a' } ], codeblock => q{{1++}} },
+          { concatenation => [ { name => 'b' } ], codeblock => q{{++2}} }
+        ]
+      },
+      {
+      name => 'B',
+      alternative =>
+       [
+         { concatenation => [ { name => 'c' } ] }
+       ],
+      }
+    ], 0
   );
 
 # }}}

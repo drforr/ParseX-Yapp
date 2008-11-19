@@ -17,11 +17,11 @@ input : # empty
   ;
 
 syntax :
-    identifier {[ 'identifier', $_[1] ]}
-  | string     {[ 'string',     $_[1] ]}
-  | codeblock  {[ 'codeblock',  $_[1] ]}
-  | ':'        {[ $_[1],        $_[1] ]}
-  | ';'        {[ ';',          $_[1] ]}
+    identifier { [ 'identifier', $_[1] ] }
+  | string     { [ 'string',     $_[1] ] }
+  | codeblock  { [ 'codeblock',  $_[1] ] }
+  | ':'        { [ $_[1],        $_[1] ] }
+  | ';'        { [ ';',          $_[1] ] }
   ;
 
 %%
@@ -152,7 +152,7 @@ is_deeply
 
 is_deeply
   (
-  parse( qq{"1, 2, 'foo'" : bar-foo;'hi there' }.q{{$_[1]++}} ),
+  parse( qq{"1, 2, 'foo'" : bar-foo;'hi there' } . q{{$_[1]++}} ),
     [
     [ q{string},     q{"1, 2, 'foo'"} ],
     [ q{:},          q{:}             ],
