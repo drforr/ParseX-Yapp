@@ -115,6 +115,215 @@ sub rules
 
 # }}}
 
+=head2 _make_name
+
+=cut
+
+# {{{ _make_name($rule_name,$cur_alternative,$cur_concatenation,$modifier);
+my %modifier_map =
+  (
+  '?' => 'ques',
+  '*' => 'star',
+  '+' => 'plus',
+  );
+sub _make_name
+  {
+  my ( $rule_name, $cur_alternative, $cur_concatenation, $modifier ) = @_;
+  my $mod = $modifier_map{$modifier};
+  return "_${rule_name}_alt_${cur_alternative}_term_${cur_concatenation}_$mod";
+  }
+
+# }}}
+
+=head2 _ques
+
+=cut
+
+# {{{ __ques($term_name)
+#
+# A : 'modifier'?
+#   ;
+# 
+# =>
+# 
+# A : _A_alt_1_term_1
+#   ;
+# _A_alt_1_term_1
+#   : LAMBDA
+#   | 'modifier'
+#   ;
+#
+sub __ques
+  {
+  my ( $term_name ) = @_;
+  return
+    [
+      { concatenation => [{ name => q{LAMBDA} }] },
+      { concatenation => [{ name => $term_name }] },
+    ]
+  }
+
+# }}}
+
+=head2 _star
+
+=cut
+
+# {{{ __star($term_name,$rule_name)
+#
+# A : 'modifier'*
+#   ;
+# 
+# =>
+# 
+# A : _A_alt_1_term_1
+#   ;
+# _A_alt_1_term_1
+#   : LAMBDA
+#   | _a_alt_1_term_1 'modifier'
+#   ;
+#
+sub __star
+  {
+  my ( $term_name, $rule_name ) = @_;
+  return
+    [
+      { concatenation => [{ name => q{LAMBDA} }] },
+      {
+      concatenation => [{ name => $rule_name }, { name => $term_name }],
+      codeblock => q{{ push @{$_[1]}, $_[2]; $_[1] }}
+      },
+    ]
+  }
+
+# }}}
+
+=head2 _plus
+
+=cut
+
+# {{{ __plus($term_name,$rule_name)
+#
+# A : 'modifier'+
+#   ;
+# 
+# =>
+# 
+# A : _A_alt_1_term_1
+#   ;
+# _A_alt_1_term_1
+#   : LAMBDA
+#   | 'modifier'
+#   | _a_alt_1_term_1 'modifier'
+#   ;
+#
+sub __plus
+  {
+  my ( $term_name, $rule_name ) = @_;
+  return
+    [
+      { concatenation => [{ name => $term_name }] },
+      { concatenation => [{ name => $rule_name }, { name => $term_name }] },
+    ]
+  }
+
+# }}}
+
+=head2 _create_rule
+
+=cut
+
+# {{{ _create_rule($rule_name,$term_name,$modifier)
+sub _create_rule
+  {
+  my ( $rule_name, $term_name, $modifier ) = @_;
+  my $new_rule =
+    {
+    name => $rule_name
+    };
+
+  if ( $modifier eq '?' )
+    {
+    $new_rule->{alternative} = Utils::__ques($term_name);
+    }
+  elsif ( $modifier eq '*' )
+    {
+    $new_rule->{alternative} = Utils::__star($term_name,$rule_name);
+    }
+  elsif ( $modifier eq '+' )
+    {
+    $new_rule->{alternative} = Utils::__plus($term_name,$rule_name);
+    }
+  else
+    {
+    die "Unknown modifier name! This shouldn't happen!";
+    }
+  return $new_rule;
+  }
+
+# }}}
+
+=head2 _simplify_rule
+
+=cut
+
+# {{{ _simplify_rule($rule)
+sub _simplify_rule
+  {
+  my ( $rule ) = @_;
+  my $rule_name = $rule->{name};
+  my @new_rules;
+
+  for ( my $i = 0; $i < @{$rule->{alternative}}; $i++ )
+    {
+    my $alternative = $rule->{alternative}[$i];
+    for ( my $j = 0; $j < @{$alternative->{concatenation}}; $j++ )
+      {
+      my $concatenation = $alternative->{concatenation}[$j];
+      next unless $concatenation->{modifier};
+
+      my $term_name = $concatenation->{name};
+      my $modifier = $concatenation->{modifier};
+      delete $concatenation->{modifier};
+
+      my $rule_name =
+        Utils::_make_name($rule_name,$i+1,$j+1,$modifier);
+
+      push @new_rules, Utils::_create_rule($rule_name,$term_name,$modifier);
+      $concatenation->{name} = $rule_name;
+      }
+    }
+
+  return @new_rules;
+  }
+
+# }}}
+
+=head2 simplify
+
+=cut
+
+# {{{ simplify($rules)
+sub simplify
+  {
+  my ( $rules ) = @_;
+  my @new_rules;
+
+  for my $rule ( @$rules )
+    {
+    push @new_rules, Utils::_simplify_rule($rule);
+    }
+  if ( @new_rules )
+    {
+    push @$rules, @new_rules;
+    push @$rules, { name => 'LAMBDA' }
+    }
+
+  return $rules;
+  }
+
+# }}}
+
 1; # Magic true value required at end of module
 __END__
 

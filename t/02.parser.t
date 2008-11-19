@@ -1,6 +1,6 @@
 use warnings;
 use strict;
-use Test::More tests => 86;
+use Test::More tests => 88;
 
 BEGIN
   {
@@ -171,6 +171,14 @@ foo
 ] => 1,
   q[ foo
  : 'modifier'
+ ;
+] => 1,
+  q[ foo
+ : 'modifier' { push @{$parser->{foo}},[qw(hi there)] }
+ ;
+] => 1,
+  q[ foo
+ : 'modifier' %prec FOO { push @{$parser->{foo}},[qw(hi there)] }
  ;
 ] => 1,
   );
